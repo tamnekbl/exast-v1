@@ -1,25 +1,22 @@
 package com.inrotate.api
 
-import com.inrotate.db.events.Event
-import com.inrotate.repository.EventRepository
+import com.inrotate.db.substructures.Substructure
+import com.inrotate.repository.SubstructureRepository
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-fun Application.configureEvents(eventsRepository: EventRepository) {
+fun Application.configureSubstructures(structureRepository: SubstructureRepository) {
     routing {
-        route("/events") {
+        route("/structures") {
             get {
                 val name = call.request.queryParameters["name"]
-                val category = call.request.queryParameters["category"] //todo
-                val startDate = call.request.queryParameters["start"]
-                val endDate = call.request.queryParameters["end"]
 
-                val events = eventsRepository.getFiltered(name, startDate, endDate)
-                if (events.isNotEmpty()) {
-                    call.respond(HttpStatusCode.OK, events)
+                val structures = structureRepository.getFiltered(name)
+                if (structures.isNotEmpty()) {
+                    call.respond(HttpStatusCode.OK, structures)
                 } else {
                     call.respond(HttpStatusCode.NotFound)
                 }
@@ -31,21 +28,21 @@ fun Application.configureEvents(eventsRepository: EventRepository) {
                     call.respond(HttpStatusCode.BadRequest)
                     return@get
                 }  //todo валидация id
-                val event = eventsRepository.getById(id.toLong())
-                if (event == null) {
+                val substructure = structureRepository.getById(id)
+                if (substructure == null) {
                     call.respond(HttpStatusCode.NotFound)
                     return@get
                 }
-                call.respond(event)
+                call.respond(substructure)
             }
 
             post {
                 try {
-                    val event = call.receive<Event>()
-                    eventsRepository.add(event)
+                    val substructure = call.receive<Substructure>()
+                    structureRepository.add(substructure)
                     call.respond(
                         HttpStatusCode.OK,
-                        ApiResponse("Event added successfully", true)
+                        ApiResponse("Substructure added successfully", true)
                     )
                 } catch (e: Exception) {
                     call.respond(
@@ -56,7 +53,7 @@ fun Application.configureEvents(eventsRepository: EventRepository) {
             }
 
             put("/{id}") {
-                val id = call.parameters["id"]?.toLongOrNull()
+                val id = call.parameters["id"]
                 if (id == null) {
                     call.respond(
                         HttpStatusCode.BadRequest,
@@ -65,19 +62,19 @@ fun Application.configureEvents(eventsRepository: EventRepository) {
                     return@put
                 }
 
-                eventsRepository.getById(id)
+                structureRepository.getById(id)
                     ?: return@put call.respond(
                         HttpStatusCode.NotFound,
-                        ApiResponse("No event with id $id", false)
+                        ApiResponse("No substructure with id $id", false)
                     )
 
                 try {
-                    val updatedEvent = call.receive<Event>() // Получаем объект из тела запроса
+                    val updatedSubstructure = call.receive<Substructure>() // Получаем объект из тела запроса
 
-                    eventsRepository.edit(id, updatedEvent) // Вызываем функцию обновления
+                    structureRepository.edit(id, updatedSubstructure) // Вызываем функцию обновления
                     call.respond(
                         HttpStatusCode.OK,
-                        ApiResponse("Event updated successfully", true)
+                        ApiResponse("Substructure updated successfully", true)
                     )
                 } catch (e: Exception) {
                     call.respond(
@@ -88,7 +85,7 @@ fun Application.configureEvents(eventsRepository: EventRepository) {
             }
 
             delete("{id}") {
-                val id = call.parameters["id"]?.toLongOrNull()
+                val id = call.parameters["id"]
                 if (id == null) {
                     call.respond(
                         HttpStatusCode.BadRequest,
@@ -97,17 +94,17 @@ fun Application.configureEvents(eventsRepository: EventRepository) {
                     return@delete
                 }
 
-                eventsRepository.getById(id)
+                structureRepository.getById(id)
                     ?: return@delete call.respond(
                         HttpStatusCode.NotFound,
-                        ApiResponse("No event with id $id", false)
+                        ApiResponse("No substructure with id $id", false)
                     )
 
                 try {
-                    eventsRepository.remove(id)
+                    structureRepository.remove(id)
                     call.respond(
                         HttpStatusCode.OK,
-                        ApiResponse("Event deleted correctly", true)
+                        ApiResponse("Substructure deleted correctly", true)
                     )
                 } catch (e: Exception) {
                     call.respond(

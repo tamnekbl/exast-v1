@@ -1,6 +1,5 @@
-package com.inrotate.db
+package com.inrotate.db.events
 
-import com.inrotate.models.Event
 import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -35,18 +34,6 @@ class EventDAO(id: EntityID<Long>) : LongEntity(id) {
     )
 }
 
-
-
-
-
-
-
-object StructureTable : Table("structures") {
-    val id = varchar("id", 50)
-    val name = varchar("name", 255)
-    val description = text("description")
-    override val primaryKey = PrimaryKey(id, name = "PK_Structures_Id")
-}
 
 object ParticipantTable : Table("participants") {
     val id = varchar("id", 50)

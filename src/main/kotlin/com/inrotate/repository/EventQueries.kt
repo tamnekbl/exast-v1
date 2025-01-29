@@ -1,10 +1,10 @@
 package com.inrotate.repository
 
 
-import com.inrotate.db.EventDAO
-import com.inrotate.db.EventsTable
+import com.inrotate.db.events.Event
+import com.inrotate.db.events.EventDAO
+import com.inrotate.db.events.EventsTable
 import com.inrotate.db.suspendTransaction
-import com.inrotate.models.Event
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
@@ -16,11 +16,11 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 class EventQueries : EventRepository {
-    override suspend fun allEvents(): List<Event> = suspendTransaction {
+    override suspend fun getAll(): List<Event> = suspendTransaction {
         EventDAO.all().map { it.toEvent() }
     }
 
-    override suspend fun eventsByTimeRange(start: String, end: String): List<Event> = suspendTransaction {
+    override suspend fun getByTimeRange(start: String, end: String): List<Event> = suspendTransaction {
         val startDateTime = LocalDateTime.parse(start)
         val endDateTime = LocalDateTime.parse(end)
 
@@ -32,7 +32,7 @@ class EventQueries : EventRepository {
             .map { it.toEvent() }
     }
 
-    override suspend fun eventByName(name: String): Event? = suspendTransaction {
+    override suspend fun getByName(name: String): Event? = suspendTransaction {
         EventDAO
             .find { (EventsTable.name eq name) }
             .limit(1)
@@ -40,7 +40,7 @@ class EventQueries : EventRepository {
             .firstOrNull()
     }
 
-    override suspend fun getFilteredEvents(
+    override suspend fun getFiltered(
         name: String?,
         startDate: String?,
         endDate: String?
@@ -70,11 +70,11 @@ class EventQueries : EventRepository {
             .map { it.toEvent() }
     }
 
-    override suspend fun eventById(id: Long): Event? = suspendTransaction {
+    override suspend fun getById(id: Long): Event? = suspendTransaction {
         EventDAO.findById(id)?.toEvent()
     }
 
-    override suspend fun addEvent(event: Event): Unit = suspendTransaction {
+    override suspend fun add(event: Event): Unit = suspendTransaction {
         //todo проверка на валидность времён. время начала не позже времени конца
         EventDAO.new {
             name = event.name
@@ -85,7 +85,7 @@ class EventQueries : EventRepository {
         }
     }
 
-    override suspend fun editEvent(id: Long, event: Event):Unit = suspendTransaction{
+    override suspend fun edit(id: Long, event: Event): Unit = suspendTransaction {
         EventDAO.findByIdAndUpdate(id){
             it.name = event.name
             it.description = event.description
@@ -95,7 +95,7 @@ class EventQueries : EventRepository {
         }
     }
 
-    override suspend fun removeEvent(id: Long):Unit = suspendTransaction{
+    override suspend fun remove(id: Long): Unit = suspendTransaction {
         EventsTable.deleteWhere { EventsTable.id.eq(id) }
     }
 }

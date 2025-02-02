@@ -1,20 +1,20 @@
 package com.inrotate.api
 
-import com.inrotate.db.structures.Structure
-import com.inrotate.repository.StructureRepository
+import com.inrotate.db.users.User
+import com.inrotate.repository.UserRepository
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-fun Route.configureStructures(structureRepository: StructureRepository) {
-    route("/db/structures") {
+fun Route.configureUsers(userRepository: UserRepository) {
+    route("/db/users") {
         get {
             val name = call.request.queryParameters["name"]
 
-            val structures = structureRepository.getFiltered(name)
-            if (structures.isNotEmpty()) {
-                call.respond(HttpStatusCode.OK, structures)
+            val users = userRepository.getFiltered(name)
+            if (users.isNotEmpty()) {
+                call.respond(HttpStatusCode.OK, users)
             } else {
                 call.respond(HttpStatusCode.NotFound)
             }
@@ -26,21 +26,21 @@ fun Route.configureStructures(structureRepository: StructureRepository) {
                 call.respond(HttpStatusCode.BadRequest)
                 return@get
             }  //todo валидация id
-            val structure = structureRepository.getById(id)
-            if (structure == null) {
+            val user = userRepository.getById(id)
+            if (user == null) {
                 call.respond(HttpStatusCode.NotFound)
                 return@get
             }
-            call.respond(structure)
+            call.respond(user)
         }
 
         post {
             try {
-                val structure = call.receive<Structure>()
-                structureRepository.add(structure)
+                val user = call.receive<User>()
+                userRepository.add(user)
                 call.respond(
                     HttpStatusCode.OK,
-                    ApiResponse("Structure added successfully", true)
+                    ApiResponse("User added successfully", true)
                 )
             } catch (e: Exception) {
                 call.respond(
@@ -60,19 +60,19 @@ fun Route.configureStructures(structureRepository: StructureRepository) {
                 return@put
             }
 
-            structureRepository.getById(id)
+            userRepository.getById(id)
                 ?: return@put call.respond(
                     HttpStatusCode.NotFound,
-                    ApiResponse("No structure with id $id", false)
+                    ApiResponse("No user with id $id", false)
                 )
 
             try {
-                val updatedStructure = call.receive<Structure>() // Получаем объект из тела запроса
+                val updatedUser = call.receive<User>() // Получаем объект из тела запроса
 
-                structureRepository.edit(id, updatedStructure) // Вызываем функцию обновления
+                userRepository.edit(id, updatedUser) // Вызываем функцию обновления
                 call.respond(
                     HttpStatusCode.OK,
-                    ApiResponse("Structure updated successfully", true)
+                    ApiResponse("User updated successfully", true)
                 )
             } catch (e: Exception) {
                 call.respond(
@@ -92,17 +92,17 @@ fun Route.configureStructures(structureRepository: StructureRepository) {
                 return@delete
             }
 
-            structureRepository.getById(id)
+            userRepository.getById(id)
                 ?: return@delete call.respond(
                     HttpStatusCode.NotFound,
-                    ApiResponse("No structure with id $id", false)
+                    ApiResponse("No user with id $id", false)
                 )
 
             try {
-                structureRepository.remove(id)
+                userRepository.remove(id)
                 call.respond(
                     HttpStatusCode.OK,
-                    ApiResponse("Structure deleted correctly", true)
+                    ApiResponse("User deleted correctly", true)
                 )
             } catch (e: Exception) {
                 call.respond(

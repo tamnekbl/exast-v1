@@ -1,20 +1,23 @@
 package com.inrotate.api
 
-import com.inrotate.db.structures.Structure
-import com.inrotate.repository.StructureRepository
+import com.inrotate.db.events.Event
+import com.inrotate.repository.EventRepository
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-fun Route.configureStructures(structureRepository: StructureRepository) {
-    route("/db/structures") {
+fun Route.configureEvents(eventsRepository: EventRepository) {
+    route("/db/events") {
         get {
             val name = call.request.queryParameters["name"]
+            val category = call.request.queryParameters["category"] //todo
+            val startDate = call.request.queryParameters["start"]
+            val endDate = call.request.queryParameters["end"]
 
-            val structures = structureRepository.getFiltered(name)
-            if (structures.isNotEmpty()) {
-                call.respond(HttpStatusCode.OK, structures)
+            val events = eventsRepository.getFiltered(name, startDate, endDate)
+            if (events.isNotEmpty()) {
+                call.respond(HttpStatusCode.OK, events)
             } else {
                 call.respond(HttpStatusCode.NotFound)
             }
@@ -26,21 +29,21 @@ fun Route.configureStructures(structureRepository: StructureRepository) {
                 call.respond(HttpStatusCode.BadRequest)
                 return@get
             }  //todo валидация id
-            val structure = structureRepository.getById(id)
-            if (structure == null) {
+            val event = eventsRepository.getById(id.toLong())
+            if (event == null) {
                 call.respond(HttpStatusCode.NotFound)
                 return@get
             }
-            call.respond(structure)
+            call.respond(event)
         }
 
         post {
             try {
-                val structure = call.receive<Structure>()
-                structureRepository.add(structure)
+                val event = call.receive<Event>()
+                eventsRepository.add(event)
                 call.respond(
                     HttpStatusCode.OK,
-                    ApiResponse("Structure added successfully", true)
+                    ApiResponse("Event added successfully", true)
                 )
             } catch (e: Exception) {
                 call.respond(
@@ -51,7 +54,7 @@ fun Route.configureStructures(structureRepository: StructureRepository) {
         }
 
         put("/{id}") {
-            val id = call.parameters["id"]
+            val id = call.parameters["id"]?.toLongOrNull()
             if (id == null) {
                 call.respond(
                     HttpStatusCode.BadRequest,
@@ -60,19 +63,19 @@ fun Route.configureStructures(structureRepository: StructureRepository) {
                 return@put
             }
 
-            structureRepository.getById(id)
+            eventsRepository.getById(id)
                 ?: return@put call.respond(
                     HttpStatusCode.NotFound,
-                    ApiResponse("No structure with id $id", false)
+                    ApiResponse("No event with id $id", false)
                 )
 
             try {
-                val updatedStructure = call.receive<Structure>() // Получаем объект из тела запроса
+                val updatedEvent = call.receive<Event>() // Получаем объект из тела запроса
 
-                structureRepository.edit(id, updatedStructure) // Вызываем функцию обновления
+                eventsRepository.edit(id, updatedEvent) // Вызываем функцию обновления
                 call.respond(
                     HttpStatusCode.OK,
-                    ApiResponse("Structure updated successfully", true)
+                    ApiResponse("Event updated successfully", true)
                 )
             } catch (e: Exception) {
                 call.respond(
@@ -83,7 +86,7 @@ fun Route.configureStructures(structureRepository: StructureRepository) {
         }
 
         delete("{id}") {
-            val id = call.parameters["id"]
+            val id = call.parameters["id"]?.toLongOrNull()
             if (id == null) {
                 call.respond(
                     HttpStatusCode.BadRequest,
@@ -92,17 +95,17 @@ fun Route.configureStructures(structureRepository: StructureRepository) {
                 return@delete
             }
 
-            structureRepository.getById(id)
+            eventsRepository.getById(id)
                 ?: return@delete call.respond(
                     HttpStatusCode.NotFound,
-                    ApiResponse("No structure with id $id", false)
+                    ApiResponse("No event with id $id", false)
                 )
 
             try {
-                structureRepository.remove(id)
+                eventsRepository.remove(id)
                 call.respond(
                     HttpStatusCode.OK,
-                    ApiResponse("Structure deleted correctly", true)
+                    ApiResponse("Event deleted correctly", true)
                 )
             } catch (e: Exception) {
                 call.respond(

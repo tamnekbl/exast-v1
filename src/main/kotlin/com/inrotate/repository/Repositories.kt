@@ -4,12 +4,11 @@ import com.inrotate.db.BaseStructure
 import com.inrotate.db.events.Event
 import com.inrotate.db.structures.Structure
 import com.inrotate.db.substructures.Substructure
+import com.inrotate.db.users.User
 
 
 interface EventRepository {
     suspend fun getAll(): List<Event>
-    suspend fun getByTimeRange(start: String, end: String): List<Event>
-    suspend fun getByName(name: String): Event?
     suspend fun getById(id: Long): Event?
     suspend fun add(event: Event)
     suspend fun edit(id: Long, event: Event)
@@ -30,4 +29,13 @@ interface StructureRepository : BaseStructureRepository<Structure> {
 }
 
 interface SubstructureRepository : BaseStructureRepository<Substructure> {
+}
+
+interface UserRepository {
+    suspend fun getAll(): List<User>
+    suspend fun getById(id: String): User?
+    suspend fun getFiltered(name: String?): List<User>
+    suspend fun add(user: User)
+    suspend fun edit(id: String, user: User)
+    suspend fun remove(id: String)
 }

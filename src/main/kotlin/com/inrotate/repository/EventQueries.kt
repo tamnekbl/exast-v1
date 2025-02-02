@@ -20,26 +20,6 @@ class EventQueries : EventRepository {
         EventDAO.all().map { it.toEvent() }
     }
 
-    override suspend fun getByTimeRange(start: String, end: String): List<Event> = suspendTransaction {
-        val startDateTime = LocalDateTime.parse(start)
-        val endDateTime = LocalDateTime.parse(end)
-
-        EventDAO
-            .find(
-                (EventsTable.startedAt greaterEq startDateTime) and
-                        (EventsTable.startedAt lessEq endDateTime)
-            )
-            .map { it.toEvent() }
-    }
-
-    override suspend fun getByName(name: String): Event? = suspendTransaction {
-        EventDAO
-            .find { (EventsTable.name eq name) }
-            .limit(1)
-            .map { it.toEvent() }
-            .firstOrNull()
-    }
-
     override suspend fun getFiltered(
         name: String?,
         startDate: String?,

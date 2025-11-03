@@ -1,0 +1,69 @@
+package com.inrotate.db.events
+
+import com.inrotate.models.Event
+import com.inrotate.models.EventFormat
+import com.inrotate.models.EventLevel
+import com.inrotate.models.OrganizationRole
+import org.jetbrains.exposed.dao.IntEntity
+import org.jetbrains.exposed.dao.IntEntityClass
+import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.dao.id.IntIdTable
+import org.jetbrains.exposed.sql.javatime.datetime
+
+object EventsTable : IntIdTable("events") {
+    val title = varchar("title", 1024)
+    val description = text("description").nullable()
+    val createdAt = datetime("created_at")
+    val startedAt = datetime("started_at")
+    val endedAt = datetime("ended_at").nullable()
+    val location = varchar("location", 1024).nullable()
+    val participantsTotal = integer("participants_total").default(0)
+    val participantsOther = integer("participants_other").default(0)
+    val participantsSpo = integer("participants_spo").default(0)
+    val participantsVo = integer("participants_vo").default(0)
+    val participantsForeign = integer("participants_foreign").default(0)
+    val format = enumeration("format", EventFormat::class).default(EventFormat.offline)
+    val level = enumeration("level", EventLevel::class).default(EventLevel.undefined)
+    val organizationRole =
+        enumeration("organization_role", OrganizationRole::class).default(OrganizationRole.participation)
+}
+
+class EventDAO(id: EntityID<Int>) : IntEntity(id) {
+    companion object : IntEntityClass<EventDAO>(EventsTable)
+
+    var title by EventsTable.title
+    var description by EventsTable.description
+    var createdAt by EventsTable.createdAt
+    var startedAt by EventsTable.startedAt
+    var endedAt by EventsTable.endedAt
+    var location by EventsTable.location
+    var participantsTotal by EventsTable.participantsTotal
+    var participantsOther by EventsTable.participantsOther
+    var participantsSpo by EventsTable.participantsSpo
+    var participantsVo by EventsTable.participantsVo
+    var participantsForeign by EventsTable.participantsForeign
+    var format by EventsTable.format
+    var level by EventsTable.level
+    var organizationRole by EventsTable.organizationRole
+
+    fun toEvent() = Event(
+        id = id.value,
+        title = title,
+        description = description,
+        createdAt = createdAt,
+        startedAt = startedAt,
+        endedAt = endedAt,
+        level = level,
+        location = location,
+        participantsTotal = participantsTotal,
+        participantsOther = participantsOther,
+        participantsSpo = participantsSpo,
+        participantsVo = participantsVo,
+        participantsForeign = participantsForeign,
+        format = format,
+        organizationRole = organizationRole,
+        participants = emptyList(), // Will be populated separately
+        types = emptyList(), // Will be populated separately
+        organizations = emptyList() // Will be populated separately
+    )
+}

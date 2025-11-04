@@ -18,7 +18,6 @@ data class EventRequest(
     val participantsForeign: Int,
     val format: EventFormat,
     val organizationRole: OrganizationRole,
-    val participants: List<EventParticipantRequest> = emptyList(),
     val types: List<EventType> = emptyList(),
     val organizations: List<Int> = emptyList()
 ) {
@@ -38,14 +37,7 @@ data class EventRequest(
         participantsForeign = this.participantsForeign,
         format = this.format,
         organizationRole = this.organizationRole,
-        participants = emptyList(), // Will be handled separately
         types = this.types,
-        organizations = emptyList() // Will be handled separately
+        organizations = this.organizations.map { Organization(it) }
     )
 }
-
-@Serializable
-data class EventParticipantRequest(
-    val participantId: Int,
-    val roleId: Int
-)

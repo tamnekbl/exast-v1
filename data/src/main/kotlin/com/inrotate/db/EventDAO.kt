@@ -1,4 +1,4 @@
-package com.inrotate.db.events
+package com.inrotate.db
 
 import com.inrotate.models.Event
 import com.inrotate.models.EventFormat
@@ -22,10 +22,10 @@ object EventsTable : IntIdTable("events") {
     val participantsSpo = integer("participants_spo").default(0)
     val participantsVo = integer("participants_vo").default(0)
     val participantsForeign = integer("participants_foreign").default(0)
-    val format = enumeration("format", EventFormat::class).default(EventFormat.offline)
-    val level = enumeration("level", EventLevel::class).default(EventLevel.undefined)
+    val format = enumerationByName("format", 50, EventFormat::class).default(EventFormat.offline)
+    val level = enumerationByName("level", 50, EventLevel::class).default(EventLevel.undefined)
     val organizationRole =
-        enumeration("organization_role", OrganizationRole::class).default(OrganizationRole.participation)
+        enumerationByName("organization_role", 50, OrganizationRole::class).default(OrganizationRole.participation)
 }
 
 class EventDAO(id: EntityID<Int>) : IntEntity(id) {
@@ -46,6 +46,10 @@ class EventDAO(id: EntityID<Int>) : IntEntity(id) {
     var level by EventsTable.level
     var organizationRole by EventsTable.organizationRole
 
+    var types by EventTypeDAO via EventEventTypesTable
+    var organizations by OrganizationDAO via OrganizationsEventsTable
+    val participants by EventParticipantDAO referrersOn EventParticipantsTable.eventId
+
     fun toEvent() = Event(
         id = id.value,
         title = title,
@@ -62,8 +66,8 @@ class EventDAO(id: EntityID<Int>) : IntEntity(id) {
         participantsForeign = participantsForeign,
         format = format,
         organizationRole = organizationRole,
-        participants = emptyList(), // Will be populated separately
-        types = emptyList(), // Will be populated separately
-        organizations = emptyList() // Will be populated separately
+        participants = participants.map { it.toEventParticipant() },
+        types = types.map { it.toEnum() },
+        organizations = organizations.map { it.toOrganization() }
     )
 }

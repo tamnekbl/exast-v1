@@ -1,10 +1,7 @@
 package com.inrotate
 
 import com.inrotate.repository.EventRepositoryImpl
-import com.inrotate.repository.OrganizationEventRepositoryImpl
-import com.inrotate.repository.OrganizationRepositoryImpl
 import com.inrotate.routes.configureEvents
-import com.inrotate.services.EventService
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.http.content.*
@@ -20,14 +17,12 @@ fun Application.configureRouting() {
     }
 
     val eventRepository = EventRepositoryImpl()
-    val organizationRepository = OrganizationRepositoryImpl()
-    val organizationEventRepository = OrganizationEventRepositoryImpl()
+    /*     val organizationRepository = OrganizationRepositoryImpl()
 
-    val eventService = EventService(
-        eventRepository,
-        organizationRepository,
-        organizationEventRepository
-    )
+       val eventService = EventService(
+            eventRepository,
+            organizationRepository
+        )*/
 
     routing {
         get("/") {
@@ -37,7 +32,7 @@ fun Application.configureRouting() {
         staticResources("/static", "static")
 
         route("/api") {
-            configureEvents(eventRepository, eventService)
+            configureEvents(eventRepository)
         }
     }
 }

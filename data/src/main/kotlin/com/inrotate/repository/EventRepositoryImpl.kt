@@ -1,11 +1,10 @@
 package com.inrotate.repository
 
 
-import com.inrotate.db.events.EventDAO
-import com.inrotate.db.events.EventsTable
-import com.inrotate.db.suspendTransaction
+import com.inrotate.db.*
 import com.inrotate.models.Event
 import org.jetbrains.exposed.sql.Op
+import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.lessEq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
@@ -17,6 +16,7 @@ class EventRepositoryImpl : EventRepository {
         EventDAO.all().map { it.toEvent() }
     }
 
+    //todo мне кажется, что мы должны искать по периоду. пересмотреть времена
     override suspend fun getFiltered(
         title: String?,
         startDate: String?,
@@ -53,7 +53,7 @@ class EventRepositoryImpl : EventRepository {
 
     override suspend fun add(entity: Event): Event = suspendTransaction {
         //todo проверка на валидность времён. время начала не позже времени конца
-        EventDAO.new {
+        val eventDAO = EventDAO.new {
             title = entity.title
             description = entity.description
             createdAt = entity.createdAt
@@ -68,7 +68,24 @@ class EventRepositoryImpl : EventRepository {
             format = entity.format
             level = entity.level
             organizationRole = entity.organizationRole
-        }.toEvent()
+        }
+
+        // 🔗 добавляем связанные организации
+        if (entity.organizations.isNotEmpty()) {
+            val orgDAOs = entity.organizations.mapNotNull { org ->
+                OrganizationDAO.findById(org.id)
+            }
+            eventDAO.organizations = SizedCollection(orgDAOs)
+        }
+        // 🔗 добавляем типы событий
+        if (entity.types.isNotEmpty()) {
+            val typeDAOs = entity.types.mapNotNull { type ->
+                EventTypeDAO.find { EventTypesTable.type eq type.value }.firstOrNull()
+            }
+            eventDAO.types = SizedCollection(typeDAOs)
+        }
+
+        eventDAO.toEvent()
     }
 
     override suspend fun update(entity: Event): Event? = suspendTransaction {

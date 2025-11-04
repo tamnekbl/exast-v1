@@ -46,9 +46,4 @@ interface OrganizationRepository : CrudRepository<Int, Organization> {
 
 interface OrganizationTypeRepository : CrudRepository<Int, OrganizationType>
 
-interface OrganizationEventRepository {
-    suspend fun addOrganizationToEvent(eventId: Int, organizationId: Int): Boolean
-    suspend fun removeOrganizationFromEvent(eventId: Int, organizationId: Int): Boolean
-    suspend fun getOrganizations(eventId: Int): List<Organization>
-}
 

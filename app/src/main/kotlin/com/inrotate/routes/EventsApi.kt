@@ -3,15 +3,13 @@ package com.inrotate.routes
 import com.inrotate.models.EventRequest
 import com.inrotate.models.toResponse
 import com.inrotate.repository.EventRepository
-import com.inrotate.services.EventService
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
 fun Route.configureEvents(
-    eventsRepository: EventRepository,
-    eventService: EventService,
+    eventsRepository: EventRepository
 ) {
     route("/db/events") {
         get {
@@ -20,11 +18,7 @@ fun Route.configureEvents(
             val endDate = call.request.queryParameters["end"]
 
             val events = eventsRepository.getFiltered(name, startDate, endDate)
-            if (events.isNotEmpty()) {
-                call.respond(HttpStatusCode.OK, events.map { it.toResponse() })
-            } else {
-                call.respond(HttpStatusCode.NotFound)
-            }
+            call.respond(HttpStatusCode.OK, events.map { it.toResponse() })
         }
 
         get("/{id}") {
@@ -44,7 +38,8 @@ fun Route.configureEvents(
         post {
             try {
                 val eventRequest = call.receive<EventRequest>()
-                val event = eventService.createEventWithOrganizations(eventRequest)
+                val event = eventRequest.toEvent()
+                eventsRepository.add(event)
                 call.respond(
                     HttpStatusCode.OK,
                     ApiResponse("Event added successfully", true)

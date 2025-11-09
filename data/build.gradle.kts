@@ -21,6 +21,9 @@ dependencies {
     implementation(libs.h2)
 
     testImplementation(kotlin("test"))
+    //testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.0")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.0")
 }
 
 tasks.test {

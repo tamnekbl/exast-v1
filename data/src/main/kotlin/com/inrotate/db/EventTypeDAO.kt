@@ -26,5 +26,7 @@ class EventTypeDAO(id: EntityID<Int>) : IntEntity(id) {
 
     fun toEnum(): EventType = EventType.entries.find { it.value == type }
         ?: throw IllegalArgumentException("No enum constant with value: $type")
+
+    fun toEventType() = toEnum()
 }
 

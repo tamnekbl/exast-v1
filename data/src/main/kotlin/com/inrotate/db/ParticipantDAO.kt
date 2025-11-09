@@ -12,7 +12,7 @@ object ParticipantsTable : IntIdTable("participants") {
     val firstName = varchar("first_name", 255)
     val middleName = varchar("middle_name", 255).nullable()
     val course = short("course").nullable()
-    val specialityId = reference("speciality_id", SpecialtiesTable, onDelete = ReferenceOption.NO_ACTION).nullable()
+    val specialityId = reference("speciality_id", SpecialitiesTable, onDelete = ReferenceOption.NO_ACTION).nullable()
     val structureId = reference("structure_id", OrganizationsTable, onDelete = ReferenceOption.NO_ACTION).nullable()
 }
 

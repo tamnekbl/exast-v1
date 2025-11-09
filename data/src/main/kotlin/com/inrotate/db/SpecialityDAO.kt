@@ -6,14 +6,14 @@ import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
 
-object SpecialtiesTable : IntIdTable("specialties") {
+object SpecialitiesTable : IntIdTable("specialties") {
     val name = text("name")
 }
 
 class SpecialtyDAO(id: EntityID<Int>) : IntEntity(id) {
-    companion object : IntEntityClass<SpecialtyDAO>(SpecialtiesTable)
+    companion object : IntEntityClass<SpecialtyDAO>(SpecialitiesTable)
 
-    var name by SpecialtiesTable.name
+    var name by SpecialitiesTable.name
     var participants by ParticipantDAO optionalReferencedOn ParticipantsTable.specialityId
 
     fun toSpecialty(): Specialty = Specialty(

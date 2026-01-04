@@ -38,7 +38,7 @@ interface ParticipantRepository : CrudRepository<Int, Participant> {
     suspend fun getByCourse(course: Int): List<Participant>
 }
 
-interface SpecialtyRepository : CrudRepository<Int, Specialty>
+interface SpecialityRepository : CrudRepository<Int, Speciality>
 
 interface OrganizationRepository : CrudRepository<Int, Organization> {
     suspend fun getByType(typeId: Int): List<Organization>

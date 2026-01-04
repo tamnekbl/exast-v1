@@ -11,7 +11,7 @@ import io.ktor.server.routing.*
 fun Route.configureOrganizations(
     organizationRepository: OrganizationRepository
 ) {
-    route("/v1/organizations") {
+    route("/organizations") {
         get {
             val organizations = organizationRepository.getAll()
             call.respond(HttpStatusCode.OK, organizations.map { it.toResponse() })

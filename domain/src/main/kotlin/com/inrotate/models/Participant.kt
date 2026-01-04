@@ -6,11 +6,12 @@ data class Participant(
     val firstName: String,
     val middleName: String?,
     val course: Int?,
-    val speciality: Specialty?,
+    val speciality: Speciality?,
     val structure: Organization?
 )
 
-data class Specialty(
+data class Speciality(
     val id: Int,
+    val code: String,
     val name: String
 )

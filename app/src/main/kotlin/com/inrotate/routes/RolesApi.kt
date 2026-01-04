@@ -1,24 +1,20 @@
 package com.inrotate.routes
 
-import com.inrotate.models.EventRequest
+import com.inrotate.models.RoleRequest
 import com.inrotate.models.toResponse
-import com.inrotate.repository.EventRepository
+import com.inrotate.repository.RoleRepository
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-fun Route.configureEvents(
-    eventRepository: EventRepository
+fun Route.configureRoles(
+    roleRepository: RoleRepository
 ) {
-    route("/events") {
+    route("/roles") {
         get {
-            val name = call.request.queryParameters["name"]
-            val startDate = call.request.queryParameters["start"]
-            val endDate = call.request.queryParameters["end"]
-
-            val events = eventRepository.getFiltered(name, startDate, endDate)
-            call.respond(HttpStatusCode.OK, events.map { it.toResponse() })
+            val roles = roleRepository.getAll()
+            call.respond(HttpStatusCode.OK, roles.map { it.toResponse() })
         }
 
         get("/{id}") {
@@ -27,22 +23,22 @@ fun Route.configureEvents(
                 call.respond(HttpStatusCode.BadRequest)
                 return@get
             }
-            val event = eventRepository.getById(id)?.toResponse()
-            if (event == null) {
+            val role = roleRepository.getById(id)?.toResponse()
+            if (role == null) {
                 call.respond(HttpStatusCode.NotFound)
                 return@get
             }
-            call.respond(event)
+            call.respond(role)
         }
 
         post {
             try {
-                val eventRequest = call.receive<EventRequest>()
-                val event = eventRequest.toEvent()
-                eventRepository.add(event)
+                val roleRequest = call.receive<RoleRequest>()
+                val role = roleRequest.toRole()
+                roleRepository.add(role)
                 call.respond(
                     HttpStatusCode.OK,
-                    ApiResponse("Event added successfully", true)
+                    ApiResponse("Role added successfully", true)
                 )
             } catch (e: Exception) {
                 call.respond(
@@ -62,21 +58,21 @@ fun Route.configureEvents(
                 return@put
             }
 
-            if (eventRepository.getById(id) == null) {
+            if (roleRepository.getById(id) == null) {
                 call.respond(
                     HttpStatusCode.NotFound,
-                    ApiResponse("No event with id $id", false)
+                    ApiResponse("No role with id $id", false)
                 )
                 return@put
             }
 
             try {
-                val updatedEventRequest = call.receive<EventRequest>()
-                val updatedEvent = updatedEventRequest.toEvent(id)
-                eventRepository.update(updatedEvent)
+                val updatedRoleRequest = call.receive<RoleRequest>()
+                val updatedRole = updatedRoleRequest.toRole(id)
+                roleRepository.update(updatedRole)
                 call.respond(
                     HttpStatusCode.OK,
-                    ApiResponse("Event updated successfully", true)
+                    ApiResponse("Role updated successfully", true)
                 )
             } catch (e: Exception) {
                 call.respond(
@@ -96,17 +92,17 @@ fun Route.configureEvents(
                 return@delete
             }
 
-            eventRepository.getById(id)
+            roleRepository.getById(id)
                 ?: return@delete call.respond(
                     HttpStatusCode.NotFound,
-                    ApiResponse("No event with id $id", false)
+                    ApiResponse("No role with id $id", false)
                 )
 
             try {
-                eventRepository.delete(id)
+                roleRepository.delete(id)
                 call.respond(
                     HttpStatusCode.OK,
-                    ApiResponse("Event deleted correctly", true)
+                    ApiResponse("Role deleted correctly", true)
                 )
             } catch (e: Exception) {
                 call.respond(

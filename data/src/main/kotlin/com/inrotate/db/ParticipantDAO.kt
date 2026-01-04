@@ -23,7 +23,7 @@ class ParticipantDAO(id: EntityID<Int>) : IntEntity(id) {
     var firstName by ParticipantsTable.firstName
     var middleName by ParticipantsTable.middleName
     var course by ParticipantsTable.course
-    var speciality by SpecialtyDAO optionalReferencedOn ParticipantsTable.specialityId
+    var speciality by SpecialityDAO optionalReferencedOn ParticipantsTable.specialityId
     var structure by OrganizationDAO optionalReferencedOn ParticipantsTable.structureId
     var events by EventDAO via EventParticipantsTable
 
@@ -33,7 +33,7 @@ class ParticipantDAO(id: EntityID<Int>) : IntEntity(id) {
         firstName = firstName,
         middleName = middleName,
         course = course?.toInt(),
-        speciality = speciality?.toSpecialty(),
+        speciality = speciality?.toSpeciality(),
         structure = structure?.toOrganization()
     )
 }

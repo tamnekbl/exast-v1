@@ -11,7 +11,7 @@ import io.ktor.server.routing.*
 fun Route.configureOrganizationTypes(
     organizationTypeRepository: OrganizationTypeRepository
 ) {
-    route("/v1/organizations/types") {
+    route("/organizations/types") {
         get {
             val types = organizationTypeRepository.getAll()
             call.respond(HttpStatusCode.OK, types.map { it.toResponse() })
@@ -33,9 +33,9 @@ fun Route.configureOrganizationTypes(
 
         post {
             try {
-                val organizationRequest = call.receive<OrganizationTypeRequest>()
-                val organization = organizationRequest.toOrganizationType()
-                organizationTypeRepository.add(organization)
+                val updatedOrganizationTypeRequest = call.receive<OrganizationTypeRequest>()
+                val organizationType = updatedOrganizationTypeRequest.toOrganizationType()
+                organizationTypeRepository.add(organizationType)
                 call.respond(
                     HttpStatusCode.OK,
                     ApiResponse("Organization type added successfully", true)

@@ -1,24 +1,20 @@
 package com.inrotate.routes
 
-import com.inrotate.models.EventRequest
+import com.inrotate.models.SpecialityRequest
 import com.inrotate.models.toResponse
-import com.inrotate.repository.EventRepository
+import com.inrotate.repository.SpecialityRepository
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-fun Route.configureEvents(
-    eventRepository: EventRepository
+fun Route.configureSpecialities(
+    specialityRepository: SpecialityRepository
 ) {
-    route("/events") {
+    route("/specialities") {
         get {
-            val name = call.request.queryParameters["name"]
-            val startDate = call.request.queryParameters["start"]
-            val endDate = call.request.queryParameters["end"]
-
-            val events = eventRepository.getFiltered(name, startDate, endDate)
-            call.respond(HttpStatusCode.OK, events.map { it.toResponse() })
+            val specialities = specialityRepository.getAll()
+            call.respond(HttpStatusCode.OK, specialities.map { it.toResponse() })
         }
 
         get("/{id}") {
@@ -27,22 +23,22 @@ fun Route.configureEvents(
                 call.respond(HttpStatusCode.BadRequest)
                 return@get
             }
-            val event = eventRepository.getById(id)?.toResponse()
-            if (event == null) {
+            val speciality = specialityRepository.getById(id)?.toResponse()
+            if (speciality == null) {
                 call.respond(HttpStatusCode.NotFound)
                 return@get
             }
-            call.respond(event)
+            call.respond(speciality)
         }
 
         post {
             try {
-                val eventRequest = call.receive<EventRequest>()
-                val event = eventRequest.toEvent()
-                eventRepository.add(event)
+                val specialityRequest = call.receive<SpecialityRequest>()
+                val speciality = specialityRequest.toSpeciality()
+                specialityRepository.add(speciality)
                 call.respond(
                     HttpStatusCode.OK,
-                    ApiResponse("Event added successfully", true)
+                    ApiResponse("Speciality added successfully", true)
                 )
             } catch (e: Exception) {
                 call.respond(
@@ -62,21 +58,21 @@ fun Route.configureEvents(
                 return@put
             }
 
-            if (eventRepository.getById(id) == null) {
+            if (specialityRepository.getById(id) == null) {
                 call.respond(
                     HttpStatusCode.NotFound,
-                    ApiResponse("No event with id $id", false)
+                    ApiResponse("No speciality with id $id", false)
                 )
                 return@put
             }
 
             try {
-                val updatedEventRequest = call.receive<EventRequest>()
-                val updatedEvent = updatedEventRequest.toEvent(id)
-                eventRepository.update(updatedEvent)
+                val updatedSpecialityRequest = call.receive<SpecialityRequest>()
+                val updatedSpeciality = updatedSpecialityRequest.toSpeciality(id)
+                specialityRepository.update(updatedSpeciality)
                 call.respond(
                     HttpStatusCode.OK,
-                    ApiResponse("Event updated successfully", true)
+                    ApiResponse("Speciality updated successfully", true)
                 )
             } catch (e: Exception) {
                 call.respond(
@@ -96,17 +92,17 @@ fun Route.configureEvents(
                 return@delete
             }
 
-            eventRepository.getById(id)
+            specialityRepository.getById(id)
                 ?: return@delete call.respond(
                     HttpStatusCode.NotFound,
-                    ApiResponse("No event with id $id", false)
+                    ApiResponse("No speciality with id $id", false)
                 )
 
             try {
-                eventRepository.delete(id)
+                specialityRepository.delete(id)
                 call.respond(
                     HttpStatusCode.OK,
-                    ApiResponse("Event deleted correctly", true)
+                    ApiResponse("Speciality deleted correctly", true)
                 )
             } catch (e: Exception) {
                 call.respond(

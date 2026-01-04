@@ -2,11 +2,6 @@ package com.inrotate.models
 
 import kotlinx.serialization.Serializable
 
-@Serializable
-data class RoleResponse(
-    val id: Int,
-    val name: String
-)
 
 @Serializable
 data class ParticipantResponse(
@@ -24,11 +19,6 @@ data class EventParticipantResponse(
     val eventId: Int,
     val participant: ParticipantResponse,
     val role: RoleResponse
-)
-
-fun Role.toResponse() = RoleResponse(
-    id = this.id,
-    name = this.name
 )
 
 fun Participant.toResponse() = ParticipantResponse(

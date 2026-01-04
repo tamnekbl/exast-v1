@@ -1,11 +1,7 @@
 package com.inrotate
 
-import com.inrotate.repository.EventRepositoryImpl
-import com.inrotate.repository.OrganizationRepositoryImpl
-import com.inrotate.repository.OrganizationTypeRepositoryImpl
-import com.inrotate.routes.configureEvents
-import com.inrotate.routes.configureOrganizationTypes
-import com.inrotate.routes.configureOrganizations
+import com.inrotate.repository.*
+import com.inrotate.routes.*
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.http.content.*
@@ -23,6 +19,8 @@ fun Application.configureRouting() {
     val eventRepository = EventRepositoryImpl()
     val organizationRepository = OrganizationRepositoryImpl()
     val organizationTypeRepository = OrganizationTypeRepositoryImpl()
+    val specialityRepository = SpecialityRepositoryImpl()
+    val roleRepository = RoleRepositoryImpl()
 
 
     routing {
@@ -32,10 +30,12 @@ fun Application.configureRouting() {
         // Static plugin. Try to access `/static/index.html`
         staticResources("/static", "static")
 
-        route("/api") {
+        route("/api/v1") {
             configureEvents(eventRepository)
             configureOrganizations(organizationRepository)
             configureOrganizationTypes(organizationTypeRepository)
+            configureSpecialities(specialityRepository)
+            configureRoles(roleRepository)
         }
     }
 }

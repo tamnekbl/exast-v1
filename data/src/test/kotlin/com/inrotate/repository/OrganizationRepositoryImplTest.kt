@@ -5,6 +5,7 @@ import com.inrotate.models.Organization
 import com.inrotate.models.OrganizationType
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -12,10 +13,12 @@ import kotlin.test.assertTrue
 
 class OrganizationRepositoryImplTest : TestDatabase() {
     private lateinit var repository: OrganizationRepository
+    private lateinit var organizationTypeRepository: OrganizationTypeRepository
 
     override fun setupDatabase() {
         super.setupDatabase()
         repository = OrganizationRepositoryImpl()
+        organizationTypeRepository = OrganizationTypeRepositoryImpl()
     }
 
     @Test
@@ -25,8 +28,15 @@ class OrganizationRepositoryImplTest : TestDatabase() {
             id = 0,
             name = "Test Organization",
             description = "Test Organization Full Name",
-            type = OrganizationType(1, "Educational")
+            type = OrganizationType(0, "Educational")
         )
+
+        assertThrows<Exception> {
+            repository.add(organization)
+        }
+
+        // Добавляем тип для проверки совместной транзакции
+        organizationTypeRepository.add(OrganizationType(1, "Educational"))
 
         // Добавляем организацию
         val addedOrganization = repository.add(organization)
@@ -35,6 +45,8 @@ class OrganizationRepositoryImplTest : TestDatabase() {
         assertNotNull(addedOrganization.id)
         assertEquals(organization.name, addedOrganization.name)
         assertEquals(organization.description, addedOrganization.description)
+        assertEquals(organization.type?.name, addedOrganization.type?.name)
+        assertEquals(1, addedOrganization.type?.id)
 
         // Получаем организацию по ID
         val retrievedOrganization = repository.getById(addedOrganization.id)
@@ -42,7 +54,9 @@ class OrganizationRepositoryImplTest : TestDatabase() {
         // Проверяем, что организация корректно извлечена
         assertNotNull(retrievedOrganization)
         assertEquals(addedOrganization.id, retrievedOrganization.id)
-        assertEquals(organization.name, retrievedOrganization.name)
+        assertEquals(addedOrganization.name, retrievedOrganization.name)
+        assertEquals(addedOrganization.type?.name, "Educational")
+        assertEquals(addedOrganization.type?.id, 1)
     }
 
     @Test

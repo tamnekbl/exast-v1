@@ -1,9 +1,6 @@
 package com.inrotate.repository
 
-import com.inrotate.db.OrganizationDAO
-import com.inrotate.db.OrganizationTypeDAO
-import com.inrotate.db.OrganizationsTable
-import com.inrotate.db.suspendTransaction
+import com.inrotate.db.*
 import com.inrotate.models.Organization
 
 class OrganizationRepositoryImpl : OrganizationRepository {
@@ -16,19 +13,34 @@ class OrganizationRepositoryImpl : OrganizationRepository {
     }
 
     override suspend fun add(entity: Organization): Organization = suspendTransaction {
-        OrganizationDAO.new {
+        val organizationDAO = OrganizationDAO.new {
             name = entity.name
             description = entity.description
-            type = entity.type?.id?.let { OrganizationTypeDAO.findById(it) }
-        }.toOrganization()
+        }
+
+        entity.type?.let {
+            organizationDAO.type = OrganizationTypeDAO
+                .find { OrganizationTypesTable.name eq it.name }
+                .firstOrNull() ?: throw Exception("Organization type not found")
+        }
+
+        organizationDAO.toOrganization()
     }
 
-    override suspend fun update(entity: Organization): Organization? = suspendTransaction {
-        OrganizationDAO.findByIdAndUpdate(entity.id) { o ->
+    override suspend fun update(entity: Organization): Organization = suspendTransaction {
+        val organizationDAO = OrganizationDAO.findByIdAndUpdate(entity.id) { o ->
             o.name = entity.name
             o.description = entity.description
-            o.type = entity.type?.id?.let { OrganizationTypeDAO.findById(it) }
-        }?.toOrganization()
+        } ?: throw Exception("Organization not found")
+
+
+        entity.type?.let {
+            organizationDAO.type = OrganizationTypeDAO
+                .find { OrganizationTypesTable.name eq it.name }
+                .firstOrNull() ?: throw Exception("Organization type not found")
+        }
+
+        organizationDAO.toOrganization()
     }
 
     override suspend fun delete(id: Int): Boolean = suspendTransaction {

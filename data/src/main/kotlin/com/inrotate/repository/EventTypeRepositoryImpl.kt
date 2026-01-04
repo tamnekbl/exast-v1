@@ -15,7 +15,7 @@ class EventTypeRepositoryImpl : EventTypeRepository {
 
     override suspend fun add(entity: EventType): EventType = throw NotImplementedError()
 
-    override suspend fun update(entity: EventType): EventType? = throw NotImplementedError()
+    override suspend fun update(entity: EventType): EventType = throw NotImplementedError()
 
     override suspend fun delete(id: Int): Boolean = suspendTransaction {
         EventTypeDAO.findById(id)?.delete() != null

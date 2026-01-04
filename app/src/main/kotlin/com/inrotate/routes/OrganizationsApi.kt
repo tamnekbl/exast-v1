@@ -1,24 +1,20 @@
 package com.inrotate.routes
 
-import com.inrotate.models.EventRequest
+import com.inrotate.models.OrganizationRequest
 import com.inrotate.models.toResponse
-import com.inrotate.repository.EventRepository
+import com.inrotate.repository.OrganizationRepository
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-fun Route.configureEvents(
-    eventRepository: EventRepository
+fun Route.configureOrganizations(
+    organizationRepository: OrganizationRepository
 ) {
-    route("/v1/events") {
+    route("/v1/organizations") {
         get {
-            val name = call.request.queryParameters["name"]
-            val startDate = call.request.queryParameters["start"]
-            val endDate = call.request.queryParameters["end"]
-
-            val events = eventRepository.getFiltered(name, startDate, endDate)
-            call.respond(HttpStatusCode.OK, events.map { it.toResponse() })
+            val organizations = organizationRepository.getAll()
+            call.respond(HttpStatusCode.OK, organizations.map { it.toResponse() })
         }
 
         get("/{id}") {
@@ -27,22 +23,22 @@ fun Route.configureEvents(
                 call.respond(HttpStatusCode.BadRequest)
                 return@get
             }
-            val event = eventRepository.getById(id)?.toResponse()
-            if (event == null) {
+            val organization = organizationRepository.getById(id)?.toResponse()
+            if (organization == null) {
                 call.respond(HttpStatusCode.NotFound)
                 return@get
             }
-            call.respond(event)
+            call.respond(organization)
         }
 
         post {
             try {
-                val eventRequest = call.receive<EventRequest>()
-                val event = eventRequest.toEvent()
-                eventRepository.add(event)
+                val organizationRequest = call.receive<OrganizationRequest>()
+                val organization = organizationRequest.toOrganization()
+                organizationRepository.add(organization)
                 call.respond(
                     HttpStatusCode.OK,
-                    ApiResponse("Event added successfully", true)
+                    ApiResponse("Organization added successfully", true)
                 )
             } catch (e: Exception) {
                 call.respond(
@@ -62,21 +58,21 @@ fun Route.configureEvents(
                 return@put
             }
 
-            if (eventRepository.getById(id) == null) {
+            if (organizationRepository.getById(id) == null) {
                 call.respond(
                     HttpStatusCode.NotFound,
-                    ApiResponse("No event with id $id", false)
+                    ApiResponse("No organization with id $id", false)
                 )
                 return@put
             }
 
             try {
-                val updatedEventRequest = call.receive<EventRequest>()
-                val updatedEvent = updatedEventRequest.toEvent(id)
-                eventRepository.update(updatedEvent)
+                val updatedOrganizationRequest = call.receive<OrganizationRequest>()
+                val updatedOrganization = updatedOrganizationRequest.toOrganization(id)
+                organizationRepository.update(updatedOrganization)
                 call.respond(
                     HttpStatusCode.OK,
-                    ApiResponse("Event updated successfully", true)
+                    ApiResponse("Organization updated successfully", true)
                 )
             } catch (e: Exception) {
                 call.respond(
@@ -96,17 +92,17 @@ fun Route.configureEvents(
                 return@delete
             }
 
-            eventRepository.getById(id)
+            organizationRepository.getById(id)
                 ?: return@delete call.respond(
                     HttpStatusCode.NotFound,
-                    ApiResponse("No event with id $id", false)
+                    ApiResponse("No organization with id $id", false)
                 )
 
             try {
-                eventRepository.delete(id)
+                organizationRepository.delete(id)
                 call.respond(
                     HttpStatusCode.OK,
-                    ApiResponse("Event deleted correctly", true)
+                    ApiResponse("Organization deleted correctly", true)
                 )
             } catch (e: Exception) {
                 call.respond(

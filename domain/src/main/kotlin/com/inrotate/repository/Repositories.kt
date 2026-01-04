@@ -2,12 +2,12 @@ package com.inrotate.repository
 
 import com.inrotate.models.*
 
-
+//todo пагинация гет-запросов
 interface CrudRepository<ID, T> {
     suspend fun getAll(): List<T>
     suspend fun getById(id: ID): T?
     suspend fun add(entity: T): T
-    suspend fun update(entity: T): T?
+    suspend fun update(entity: T): T
     suspend fun delete(id: ID): Boolean
 }
 

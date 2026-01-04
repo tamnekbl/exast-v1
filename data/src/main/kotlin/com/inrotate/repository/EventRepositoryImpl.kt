@@ -69,6 +69,7 @@ class EventRepositoryImpl : EventRepository {
             level = entity.level
             organizationRole = entity.organizationRole
         }
+        //todo прокидывать ошибки каждого шага наверх для точности
 
         // 🔗 добавляем связанные организации
         if (entity.organizations.isNotEmpty()) {
@@ -88,8 +89,9 @@ class EventRepositoryImpl : EventRepository {
         eventDAO.toEvent()
     }
 
-    override suspend fun update(entity: Event): Event? = suspendTransaction {
-        EventDAO.findByIdAndUpdate(entity.id) {
+    override suspend fun update(entity: Event): Event = suspendTransaction {
+        //todo обновить тесты
+        val eventDAO = EventDAO.findByIdAndUpdate(entity.id) {
             it.title = entity.title
             it.description = entity.description
             it.createdAt = entity.createdAt
@@ -104,7 +106,26 @@ class EventRepositoryImpl : EventRepository {
             it.format = entity.format
             it.level = entity.level
             it.organizationRole = entity.organizationRole
-        }?.toEvent()
+        } ?: throw Exception("Event not found")
+
+        //todo продумать логику обновления связанных объектов при их отсутствии. т.е. типа хотим удалить организации у события
+
+        // 🔗 обновляем связанные организации
+        if (entity.organizations.isNotEmpty()) {
+            val orgDAOs = entity.organizations.mapNotNull { org ->
+                OrganizationDAO.findById(org.id)
+            }
+            eventDAO.organizations = SizedCollection(orgDAOs)
+        }
+        // 🔗 обновляем типы событий
+        if (entity.types.isNotEmpty()) {
+            val typeDAOs = entity.types.mapNotNull { type ->
+                EventTypeDAO.find { EventTypesTable.type eq type.value }.firstOrNull()
+            }
+            eventDAO.types = SizedCollection(typeDAOs)
+        }
+
+        eventDAO.toEvent()
     }
 
     override suspend fun delete(id: Int): Boolean = suspendTransaction {

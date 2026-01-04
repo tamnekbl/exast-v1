@@ -19,10 +19,10 @@ class OrganizationTypeRepositoryImpl : OrganizationTypeRepository {
         }.toOrganizationType()
     }
 
-    override suspend fun update(entity: OrganizationType): OrganizationType? = suspendTransaction {
+    override suspend fun update(entity: OrganizationType): OrganizationType = suspendTransaction {
         OrganizationTypeDAO.findByIdAndUpdate(entity.id) {
             it.name = entity.name
-        }?.toOrganizationType()
+        }?.toOrganizationType() ?: throw Exception("Organization type Not Found")
     }
 
     override suspend fun delete(id: Int): Boolean = suspendTransaction {

@@ -45,7 +45,7 @@ class OrganizationRepositoryImplTest : TestDatabase() {
         assertNotNull(addedOrganization.id)
         assertEquals(organization.name, addedOrganization.name)
         assertEquals(organization.description, addedOrganization.description)
-        assertEquals(organization.type?.name, addedOrganization.type?.name)
+        assertEquals(organization.type?.type, addedOrganization.type?.type)
         assertEquals(1, addedOrganization.type?.id)
 
         // Получаем организацию по ID
@@ -55,7 +55,7 @@ class OrganizationRepositoryImplTest : TestDatabase() {
         assertNotNull(retrievedOrganization)
         assertEquals(addedOrganization.id, retrievedOrganization.id)
         assertEquals(addedOrganization.name, retrievedOrganization.name)
-        assertEquals(addedOrganization.type?.name, "Educational")
+        assertEquals(addedOrganization.type?.type, "Educational")
         assertEquals(addedOrganization.type?.id, 1)
     }
 
@@ -68,6 +68,8 @@ class OrganizationRepositoryImplTest : TestDatabase() {
             description = "Test Organization Full Name",
             type = OrganizationType(1, "Educational")
         )
+        // Добавляем тип для проверки совместной транзакции
+        organizationTypeRepository.add(OrganizationType(1, "Educational"))
 
         val addedOrganization = repository.add(originalOrganization)
 
@@ -95,6 +97,9 @@ class OrganizationRepositoryImplTest : TestDatabase() {
             type = OrganizationType(1, "Educational")
         )
 
+        // Добавляем тип для проверки совместной транзакции
+        organizationTypeRepository.add(OrganizationType(1, "Educational"))
+
         val addedOrganization = repository.add(organization)
         val organizationId = addedOrganization.id
 
@@ -118,6 +123,9 @@ class OrganizationRepositoryImplTest : TestDatabase() {
             description = "Organization 1 Full Name",
             type = OrganizationType(1, "Educational")
         )
+
+        // Добавляем тип для проверки совместной транзакции
+        organizationTypeRepository.add(OrganizationType(1, "Educational"))
 
         val org2 = org1.copy(id = 0, name = "Organization 2", description = "Organization 2 Full Name")
 

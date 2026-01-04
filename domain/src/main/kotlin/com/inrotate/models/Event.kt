@@ -50,15 +50,15 @@ enum class EventLevel {
     international
 }
 
-enum class EventType(val value: String) {
-    CIVIC("гражданское"),
-    PATRIOTIC("патриотическое"),
-    PHYSICAL("физическое"),
-    SPIRITUAL_MORAL("духовно-нравственное"),
-    ECOLOGICAL("экологическое"),
-    PROFESSIONAL_LABOR("профессионально-трудовое"),
-    CULTURAL_CREATIVE("культурно-творческое"),
-    SCIENTIFIC_EDUCATIONAL("научно-образовательное"),
-    VOLUNTEERING("добровольческое"),
-    STUDENT_SELF_GOVERNMENT("студенческое самоуправление");
+enum class EventType {
+    civic,
+    patriotic,
+    physical,
+    spiritual_moral,
+    ecological,
+    professional_labor,
+    cultural_creative,
+    scientefic_educational,
+    volunteering,
+    student_self_government;
 }

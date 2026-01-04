@@ -22,7 +22,7 @@ class OrganizationTypeRepositoryImplTest : TestDatabase() {
         // Создаем тестовый тип организации
         val orgType = OrganizationType(
             id = 0,
-            name = "University",
+            type = "University",
         )
 
         // Добавляем тип организации
@@ -30,7 +30,7 @@ class OrganizationTypeRepositoryImplTest : TestDatabase() {
 
         // Проверяем, что тип организации был добавлен
         assertNotNull(addedOrgType.id)
-        assertEquals(orgType.name, addedOrgType.name)
+        assertEquals(orgType.type, addedOrgType.type)
 
         // Получаем тип организации по ID
         val retrievedOrgType = repository.getById(addedOrgType.id)
@@ -38,7 +38,7 @@ class OrganizationTypeRepositoryImplTest : TestDatabase() {
         // Проверяем, что тип организации корректно извлечен
         assertNotNull(retrievedOrgType)
         assertEquals(addedOrgType.id, retrievedOrgType.id)
-        assertEquals(orgType.name, retrievedOrgType.name)
+        assertEquals(orgType.type, retrievedOrgType.type)
     }
 
     @Test
@@ -46,21 +46,21 @@ class OrganizationTypeRepositoryImplTest : TestDatabase() {
         // Создаем и добавляем тип организации
         val originalOrgType = OrganizationType(
             id = 0,
-            name = "College",
+            type = "College",
         )
 
         val addedOrgType = repository.add(originalOrgType)
 
         // Обновляем тип организации
         val updatedOrgType = addedOrgType.copy(
-            name = "University",
+            type = "University",
         )
 
         val result = repository.update(updatedOrgType)
 
         // Проверяем, что тип организации был обновлен
         assertNotNull(result)
-        assertEquals("University", result.name)
+        assertEquals("University", result.type)
     }
 
     @Test
@@ -68,7 +68,7 @@ class OrganizationTypeRepositoryImplTest : TestDatabase() {
         // Создаем и добавляем тип организации
         val orgType = OrganizationType(
             id = 0,
-            name = "Institute",
+            type = "Institute",
         )
 
         val addedOrgType = repository.add(orgType)
@@ -90,12 +90,12 @@ class OrganizationTypeRepositoryImplTest : TestDatabase() {
         // Добавляем несколько типов организаций
         val type1 = OrganizationType(
             id = 0,
-            name = "University",
+            type = "University",
         )
 
         val type2 = OrganizationType(
             id = 0,
-            name = "College",
+            type = "College",
         )
 
         repository.add(type1)
@@ -106,7 +106,7 @@ class OrganizationTypeRepositoryImplTest : TestDatabase() {
 
         // Проверяем, что все типы организаций были получены
         assertEquals(2, orgTypes.size)
-        assertTrue(orgTypes.any { it.name == "University" })
-        assertTrue(orgTypes.any { it.name == "College" })
+        assertTrue(orgTypes.any { it.type == "University" })
+        assertTrue(orgTypes.any { it.type == "College" })
     }
 }

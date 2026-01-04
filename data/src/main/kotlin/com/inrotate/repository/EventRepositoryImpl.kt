@@ -81,7 +81,7 @@ class EventRepositoryImpl : EventRepository {
         // 🔗 добавляем типы событий
         if (entity.types.isNotEmpty()) {
             val typeDAOs = entity.types.mapNotNull { type ->
-                EventTypeDAO.find { EventTypesTable.type eq type.value }.firstOrNull()
+                EventTypeDAO.find { EventTypesTable.type eq type.name }.firstOrNull()
             }
             eventDAO.types = SizedCollection(typeDAOs)
         }
@@ -120,7 +120,7 @@ class EventRepositoryImpl : EventRepository {
         // 🔗 обновляем типы событий
         if (entity.types.isNotEmpty()) {
             val typeDAOs = entity.types.mapNotNull { type ->
-                EventTypeDAO.find { EventTypesTable.type eq type.value }.firstOrNull()
+                EventTypeDAO.find { EventTypesTable.type eq type.name }.firstOrNull()
             }
             eventDAO.types = SizedCollection(typeDAOs)
         }

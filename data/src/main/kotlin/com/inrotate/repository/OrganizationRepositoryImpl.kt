@@ -20,7 +20,7 @@ class OrganizationRepositoryImpl : OrganizationRepository {
 
         entity.type?.let {
             organizationDAO.type = OrganizationTypeDAO
-                .find { OrganizationTypesTable.name eq it.name }
+                .find { OrganizationTypesTable.type eq it.type }
                 .firstOrNull() ?: throw Exception("Organization type not found")
         }
 
@@ -36,7 +36,7 @@ class OrganizationRepositoryImpl : OrganizationRepository {
 
         entity.type?.let {
             organizationDAO.type = OrganizationTypeDAO
-                .find { OrganizationTypesTable.name eq it.name }
+                .find { OrganizationTypesTable.type eq it.type }
                 .firstOrNull() ?: throw Exception("Organization type not found")
         }
 

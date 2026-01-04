@@ -15,13 +15,13 @@ class OrganizationTypeRepositoryImpl : OrganizationTypeRepository {
 
     override suspend fun add(entity: OrganizationType): OrganizationType = suspendTransaction {
         OrganizationTypeDAO.new {
-            name = entity.name
+            type = entity.type
         }.toOrganizationType()
     }
 
     override suspend fun update(entity: OrganizationType): OrganizationType = suspendTransaction {
         OrganizationTypeDAO.findByIdAndUpdate(entity.id) {
-            it.name = entity.name
+            it.type = entity.type
         }?.toOrganizationType() ?: throw Exception("Organization type Not Found")
     }
 

@@ -7,17 +7,17 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
 
 object OrganizationTypesTable : IntIdTable("organization_type") {
-    val name = varchar("name", 255)
+    val type = varchar("type", 255)
 }
 
 class OrganizationTypeDAO(id: EntityID<Int>) : IntEntity(id) {
     companion object : IntEntityClass<OrganizationTypeDAO>(OrganizationTypesTable)
 
-    var name by OrganizationTypesTable.name
+    var type by OrganizationTypesTable.type
     val organizations by OrganizationDAO optionalReferrersOn OrganizationsTable.typeId
 
     fun toOrganizationType(): OrganizationType = OrganizationType(
         id = id.value,
-        name = name
+        type = type
     )
 }

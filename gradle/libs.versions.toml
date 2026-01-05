@@ -1,9 +1,9 @@
 
 [versions]
-exposed-version = "0.57.0"
+exposed-version = "0.61.0"
 h2-version = "2.3.232"
-kotlin-version = "2.1.0"
-ktor-version = "3.0.3"
+kotlin-version = "2.3.0"
+ktor-version = "3.3.3"
 logback-version = "1.4.14"
 postgres-version = "42.7.7"
 dotenv-version = "6.5.0"

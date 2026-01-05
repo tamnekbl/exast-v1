@@ -8,10 +8,11 @@ data class Participant(
     val course: Int?,
     val speciality: Speciality?,
     val structure: Organization?
+    //todo add форма обучаения ОФО, ЗФО, ОЗФО
 )
 
 data class Speciality(
     val id: Int,
-    val code: String,
-    val name: String
+    val code: String = "",
+    val name: String = ""
 )

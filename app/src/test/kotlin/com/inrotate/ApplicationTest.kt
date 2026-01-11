@@ -19,6 +19,7 @@ class ApplicationTest {
     fun testRoot() = testApplication {
         application {
             configureTestDatabases()
+            configureAuthentication()
             configureRouting()
         }
         client.get("/").apply {

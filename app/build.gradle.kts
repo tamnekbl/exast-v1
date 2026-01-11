@@ -27,6 +27,7 @@ dependencies {
     implementation(libs.ktor.server.host.common)
     implementation(libs.ktor.server.status.pages)
     implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.server.auth)
     implementation(libs.logback.classic)
     implementation(libs.dotenv)
     implementation(libs.exposed.core)

@@ -4,6 +4,7 @@ import com.inrotate.repository.*
 import com.inrotate.routes.*
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
 import io.ktor.server.http.content.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
@@ -30,12 +31,15 @@ fun Application.configureRouting() {
         // Static plugin. Try to access `/static/index.html`
         staticResources("/static", "static")
 
-        route("/api/v1") {
-            configureEvents(eventRepository)
-            configureOrganizations(organizationRepository)
-            configureOrganizationTypes(organizationTypeRepository)
-            configureSpecialities(specialityRepository)
-            configureRoles(roleRepository)
+        authenticate("auth-basic") {
+            route("/api/v1") {
+                configureEvents(eventRepository)
+                configureOrganizations(organizationRepository)
+                configureOrganizationTypes(organizationTypeRepository)
+                configureSpecialities(specialityRepository)
+                configureRoles(roleRepository)
+            }
         }
+
     }
 }

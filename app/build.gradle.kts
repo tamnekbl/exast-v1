@@ -31,10 +31,11 @@ dependencies {
     implementation(libs.logback.classic)
     implementation(libs.dotenv)
     implementation(libs.exposed.core)
+    implementation(libs.poi.ooxml)
 
     testImplementation(libs.ktor.server.test.host)
-    testImplementation(libs.kotlin.test.junit)
-    testImplementation(libs.ktor.client.content.negotiation)
+    testImplementation(libs.kotlin.test.junit5)
+    testImplementation(libs.poi.ooxml)
 }
 
 // Настраиваем toolchain для Kotlin
@@ -45,4 +46,9 @@ kotlin {
 // Задача для запуска приложения
 tasks.withType<JavaExec> {
     classpath = sourceSets.main.get().runtimeClasspath
+}
+
+// Это заставит Gradle искать тесты JUnit 5
+tasks.withType<Test> {
+    useJUnitPlatform()
 }

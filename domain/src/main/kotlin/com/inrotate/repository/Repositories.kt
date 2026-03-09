@@ -13,6 +13,7 @@ interface CrudRepository<ID, T> {
 
 interface EventRepository : CrudRepository<Int, Event> {
     suspend fun getFiltered(title: String?, startDate: String?, endDate: String?): List<Event>
+    suspend fun addAll(events: List<Event>): List<Event>
 }
 
 interface EventEventTypeRepository {

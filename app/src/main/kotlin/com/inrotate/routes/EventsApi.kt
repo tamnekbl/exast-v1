@@ -1,12 +1,16 @@
 package com.inrotate.routes
 
 import com.inrotate.models.EventRequest
+import com.inrotate.models.importer.EventRaw
+import com.inrotate.models.importer.XlsxParser
 import com.inrotate.models.toResponse
 import com.inrotate.repository.EventRepository
 import io.ktor.http.*
+import io.ktor.http.content.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.utils.io.jvm.javaio.*
 
 fun Route.configureEvents(
     eventRepository: EventRepository
@@ -113,6 +117,44 @@ fun Route.configureEvents(
                     HttpStatusCode.InternalServerError,
                     ApiResponse(e.message, false)
                 )
+            }
+        }
+
+        post("/import/excel") {
+            try {
+                //todo ограничение на размер файла
+                val multipart = call.receiveMultipart()
+                val events = mutableListOf<EventRaw>()
+
+                multipart.forEachPart { part ->
+                    if (part is PartData.FileItem) {
+                        // Используем runCatching или обычный try-catch для парсинга конкретного файла
+                        runCatching { part.provider().toInputStream().use { XlsxParser.parseEvents(it) } }
+                            .onSuccess { events.addAll(it) }
+                            .onFailure {
+                                throw IllegalArgumentException("Parsing error in file ${part.originalFileName}: ${it.message}")
+                            }
+                    }
+                    part.dispose()
+                }
+
+                if (events.isEmpty()) {
+                    return@post call.respond(
+                        HttpStatusCode.BadRequest,
+                        ApiResponse("Файлы не найдены или пусты", false)
+                    )
+                }
+
+                val addedEvents = eventRepository.addAll(events.map { it.toEvent() })
+
+                call.respond(
+                    HttpStatusCode.OK,
+                    ApiResponse("Imported successfully: ${addedEvents.size}", true)
+                )
+
+            } catch (e: Exception) {
+                // Обработка общих ошибок: обрыв связи, слишком большой файл, ошибки парсинга
+                call.respond(HttpStatusCode.BadRequest, ApiResponse(e.message ?: "Ошибка импорта", false))
             }
         }
     }

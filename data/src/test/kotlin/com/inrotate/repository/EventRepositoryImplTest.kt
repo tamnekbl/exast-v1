@@ -1,11 +1,12 @@
 package com.inrotate.repository
 
 import com.inrotate.TestDatabase
-import com.inrotate.models.Event
-import com.inrotate.models.EventFormat
-import com.inrotate.models.EventLevel
-import com.inrotate.models.OrganizationRole
+import com.inrotate.db.EventTypesTable
+import com.inrotate.db.OrganizationsTable
+import com.inrotate.models.*
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
 import kotlin.test.assertEquals
@@ -178,5 +179,73 @@ class EventRepositoryImplTest : TestDatabase() {
         assertEquals(2, events.size)
         assertTrue(events.any { it.title == "Event 1" })
         assertTrue(events.any { it.title == "Event 2" })
+    }
+
+    @Test
+    fun `should add all events`() = runBlocking {
+        // Предварительно заполняем связанные таблицы
+        transaction {
+            OrganizationsTable.insert {
+                it[name] = "Test Org 1"
+            }
+            OrganizationsTable.insert {
+                it[name] = "Test Org 2"
+            }
+            EventType.entries.forEach { eventType ->
+                EventTypesTable.insert {
+                    it[type] = eventType.name
+                }
+            }
+        }
+
+        val eventsToAdd = listOf(
+            Event(
+                id = 0,
+                title = "Bulk Event 1",
+                description = "Description 1",
+                createdAt = LocalDateTime.now(),
+                startedAt = LocalDateTime.now().plusDays(1),
+                endedAt = LocalDateTime.now().plusDays(2),
+                level = EventLevel.regional,
+                location = "Location 1",
+                participantsTotal = 5,
+                participantsOther = 0,
+                participantsSpo = 2,
+                participantsVo = 2,
+                participantsForeign = 1,
+                format = EventFormat.offline,
+                organizationRole = OrganizationRole.participation,
+                participants = emptyList(),
+                types = listOf(EventType.scientefic_educational),
+                organizations = listOf(Organization(id = 1, name = "Test Org 1"))
+            ),
+            Event(
+                id = 0,
+                title = "Bulk Event 2",
+                description = "Description 2",
+                createdAt = LocalDateTime.now(),
+                startedAt = LocalDateTime.now().plusDays(3),
+                endedAt = LocalDateTime.now().plusDays(4),
+                level = EventLevel.national,
+                location = "Location 2",
+                participantsTotal = 10,
+                participantsOther = 1,
+                participantsSpo = 3,
+                participantsVo = 5,
+                participantsForeign = 1,
+                format = EventFormat.online,
+                organizationRole = OrganizationRole.organization,
+                participants = emptyList(),
+                types = listOf(EventType.cultural_creative),
+                organizations = listOf(Organization(id = 2, name = "Test Org 2"))
+            )
+        )
+
+        repository.addAll(eventsToAdd)
+
+        val allEvents = repository.getAll()
+        assertEquals(2, allEvents.size)
+        assertTrue(allEvents.any { it.title == "Bulk Event 1" })
+        assertTrue(allEvents.any { it.title == "Bulk Event 2" })
     }
 }

@@ -47,6 +47,55 @@ class EventRepositoryImpl : EventRepository {
             .map { it.toEvent() }
     }
 
+    override suspend fun addAll(events: List<Event>): List<Event> = suspendTransaction {
+        val organizationsMap = OrganizationDAO
+            .all()
+            .associateBy { it.name.lowercase().trim() }
+
+        val typesMap = EventTypeDAO
+            .all()
+            .associateBy { it.type.lowercase().trim() }
+
+
+        val result = events.map { entity ->
+            val eventDAO = EventDAO.new {
+                title = entity.title
+                description = entity.description
+                createdAt = entity.createdAt
+                startedAt = entity.startedAt
+                endedAt = entity.endedAt
+                location = entity.location
+                participantsTotal = entity.participantsTotal
+                participantsOther = entity.participantsOther
+                participantsSpo = entity.participantsSpo
+                participantsVo = entity.participantsVo
+                participantsForeign = entity.participantsForeign
+                format = entity.format
+                level = entity.level
+                organizationRole = entity.organizationRole
+            }
+
+            // организации
+            val orgDAOs = entity.organizations.map { org ->
+                organizationsMap[org.name.lowercase().trim()]
+                    ?: throw IllegalArgumentException("OrganizationDAO with name \"${org.name.lowercase()}\" not found")
+            }
+
+            eventDAO.organizations = SizedCollection(orgDAOs)
+
+            // типы
+            val typeDAOs = entity.types.map { type ->
+                typesMap[type.name.lowercase().trim()]
+                    ?: throw IllegalArgumentException("TypeDAO with name \"${type.name.lowercase()}\" not found")
+            }
+
+            eventDAO.types = SizedCollection(typeDAOs)
+
+            eventDAO.toEvent()
+        }
+        result
+    }
+
     override suspend fun getById(id: Int): Event? = suspendTransaction {
         EventDAO.findById(id)?.toEvent()
     }

@@ -11,6 +11,7 @@ import org.jetbrains.exposed.sql.Table
 object OrganizationsTable : IntIdTable("organizations") {
     val name = varchar("name", 255)
     val description = text("description").nullable()
+    val isExternal = bool("is_external").default(false)
     val typeId = reference("type_id", OrganizationTypesTable).nullable()
 }
 
@@ -25,6 +26,7 @@ class OrganizationDAO(id: EntityID<Int>) : IntEntity(id) {
 
     var name by OrganizationsTable.name
     var description by OrganizationsTable.description
+    var isExternal by OrganizationsTable.isExternal //todo обновить модели и тесты с этим полем
     var type by OrganizationTypeDAO optionalReferencedOn OrganizationsTable.typeId
 
     var events by EventDAO via OrganizationsEventsTable

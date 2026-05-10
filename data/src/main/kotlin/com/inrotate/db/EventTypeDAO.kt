@@ -13,8 +13,10 @@ object EventTypesTable : IntIdTable("event_types") {
 }
 
 object EventEventTypesTable : Table("event_event_types") {
-    val eventId = reference("event_id", EventsTable, onDelete = ReferenceOption.CASCADE)
-    val typeId = reference("type_id", EventTypesTable, onDelete = ReferenceOption.CASCADE)
+    val eventId =
+        reference("event_id", EventsTable, onDelete = ReferenceOption.CASCADE, onUpdate = ReferenceOption.CASCADE)
+    val typeId =
+        reference("type_id", EventTypesTable, onDelete = ReferenceOption.CASCADE, onUpdate = ReferenceOption.CASCADE)
     override val primaryKey = PrimaryKey(eventId, typeId)
 }
 

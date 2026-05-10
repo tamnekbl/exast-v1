@@ -11,7 +11,8 @@ data class ParticipantResponse(
     val middleName: String?,
     val course: Int?,
     val speciality: String?,
-    val structure: String?
+    val structure: String?,
+    val studyMode: StudyMode?
 )
 
 @Serializable
@@ -28,5 +29,6 @@ fun Participant.toResponse() = ParticipantResponse(
     middleName = this.middleName,
     course = this.course,
     speciality = this.speciality?.name,
-    structure = this.structure?.name
+    structure = this.structure?.name,
+    studyMode = this.studyMode
 )

@@ -7,8 +7,8 @@ data class Participant(
     val middleName: String?,
     val course: Int?,
     val speciality: Speciality?,
-    val structure: Organization?
-    //todo add форма обучаения ОФО, ЗФО, ОЗФО
+    val structure: Organization?,
+    val studyMode: StudyMode?
 )
 
 data class Speciality(
@@ -16,3 +16,9 @@ data class Speciality(
     val code: String = "",
     val name: String = ""
 )
+
+enum class StudyMode(val value: String) {
+    FULL_TIME("ОФО"),
+    PART_TIME("ОЗФО"),
+    DISTANCE("ЗФО")
+}

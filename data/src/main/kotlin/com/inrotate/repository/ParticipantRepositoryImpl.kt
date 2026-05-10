@@ -21,6 +21,7 @@ class ParticipantRepositoryImpl : ParticipantRepository {
             firstName = entity.firstName
             middleName = entity.middleName
             course = entity.course?.toShort()
+            studyMode = entity.studyMode
         }
 
         entity.speciality?.let {
@@ -42,6 +43,7 @@ class ParticipantRepositoryImpl : ParticipantRepository {
             it.firstName = entity.firstName
             it.middleName = entity.middleName
             it.course = entity.course?.toShort()
+            it.studyMode = entity.studyMode
         } ?: throw Exception("Participant Not Found")
 
         entity.speciality?.let {

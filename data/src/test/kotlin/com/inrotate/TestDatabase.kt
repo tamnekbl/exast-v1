@@ -23,7 +23,7 @@ open class TestDatabase {
                 EventEventTypesTable,
                 ParticipantsTable,
                 RolesTable,
-                EventParticipantsTable,
+                ParticipationTable,
                 OrganizationTypesTable,
                 SpecialitiesTable
             )
@@ -41,7 +41,7 @@ open class TestDatabase {
                 EventEventTypesTable,
                 ParticipantsTable,
                 RolesTable,
-                EventParticipantsTable,
+                ParticipationTable,
                 OrganizationTypesTable,
                 SpecialitiesTable
             )

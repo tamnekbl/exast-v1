@@ -22,10 +22,10 @@ object EventsTable : IntIdTable("events") {
     val participantsSpo = integer("participants_spo").default(0)
     val participantsVo = integer("participants_vo").default(0)
     val participantsForeign = integer("participants_foreign").default(0)
-    val format = enumerationByName("format", 50, EventFormat::class).default(EventFormat.offline)
-    val level = enumerationByName("level", 50, EventLevel::class).default(EventLevel.undefined)
-    val organizationRole =
-        enumerationByName("organization_role", 50, OrganizationRole::class).default(OrganizationRole.participation)
+    val format = pgEnum<EventFormat>("format", "event_format").default(EventFormat.offline)
+    val level = pgEnum<EventLevel>("level", "event_level").default(EventLevel.undefined)
+    val organizationRole = pgEnum<OrganizationRole>("participation_type", "participation_type")
+        .default(OrganizationRole.participation)
 }
 
 class EventDAO(id: EntityID<Int>) : IntEntity(id) {
@@ -48,7 +48,7 @@ class EventDAO(id: EntityID<Int>) : IntEntity(id) {
 
     var types by EventTypeDAO via EventEventTypesTable
     var organizations by OrganizationDAO via OrganizationsEventsTable
-    val participants by EventParticipantDAO referrersOn EventParticipantsTable.eventId
+    val participants by ParticipationDAO referrersOn ParticipationTable.eventId
 
     fun toEvent() = Event(
         id = id.value,

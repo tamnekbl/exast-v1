@@ -6,7 +6,7 @@ import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
 
-object OrganizationTypesTable : IntIdTable("organization_type") {
+object OrganizationTypesTable : IntIdTable("organization_types") {
     val type = varchar("type", 255)
 }
 

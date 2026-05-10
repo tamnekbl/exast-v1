@@ -9,7 +9,8 @@ data class ParticipantRequest(
     val middleName: String?,
     val course: Int?,
     val speciality: Int?,
-    val structure: Int?
+    val structure: Int?,
+    val studyMode: StudyMode?
 ) {
     fun toParticipant(id: Int = 0) = Participant(
         id = id,
@@ -18,7 +19,8 @@ data class ParticipantRequest(
         middleName = this.middleName,
         course = this.course,
         speciality = this.speciality?.let { Speciality(it) },
-        structure = this.structure?.let { Organization(it) }
+        structure = this.structure?.let { Organization(it) },
+        studyMode = studyMode
     )
 
 }

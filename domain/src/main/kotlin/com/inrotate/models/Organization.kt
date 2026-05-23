@@ -5,7 +5,8 @@ data class Organization(
     val id: Int,
     val name: String = "",
     val description: String? = null,
-    val type: OrganizationType? = null
+    val type: OrganizationType? = null,
+    val isExternal: Boolean = false,
 )
 
 data class OrganizationType(

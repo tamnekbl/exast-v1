@@ -26,7 +26,7 @@ class OrganizationDAO(id: EntityID<Int>) : IntEntity(id) {
 
     var name by OrganizationsTable.name
     var description by OrganizationsTable.description
-    var isExternal by OrganizationsTable.isExternal //todo обновить модели и тесты с этим полем
+    var isExternal by OrganizationsTable.isExternal
     var type by OrganizationTypeDAO optionalReferencedOn OrganizationsTable.typeId
 
     var events by EventDAO via OrganizationsEventsTable
@@ -35,6 +35,7 @@ class OrganizationDAO(id: EntityID<Int>) : IntEntity(id) {
         id = id.value,
         name = name,
         description = description,
-        type = type?.toOrganizationType()
+        type = type?.toOrganizationType(),
+        isExternal = isExternal,
     )
 }

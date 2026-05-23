@@ -6,12 +6,14 @@ import kotlinx.serialization.Serializable
 data class OrganizationRequest (
     val name: String,
     val description: String?,
-    val type: String?
+    val type: String?,
+    val isExternal: Boolean,
 ) {
     fun toOrganization(id: Int = 0) = Organization(
         id = id,
         name = this.name,
         description = this.description,
-        type = this.type?.let { OrganizationType(0, it) }
+        type = this.type?.let { OrganizationType(0, it) },
+        isExternal = this.isExternal,
     )
 }

@@ -16,6 +16,7 @@ class OrganizationRepositoryImpl : OrganizationRepository {
         val organizationDAO = OrganizationDAO.new {
             name = entity.name
             description = entity.description
+            isExternal = entity.isExternal
         }
 
         entity.type?.let {
@@ -31,6 +32,7 @@ class OrganizationRepositoryImpl : OrganizationRepository {
         val organizationDAO = OrganizationDAO.findByIdAndUpdate(entity.id) { o ->
             o.name = entity.name
             o.description = entity.description
+            o.isExternal = entity.isExternal
         } ?: throw Exception("Organization not found")
 
 

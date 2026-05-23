@@ -28,7 +28,8 @@ class OrganizationRepositoryImplTest : TestDatabase() {
             id = 0,
             name = "Test Organization",
             description = "Test Organization Full Name",
-            type = OrganizationType(0, "Educational")
+            type = OrganizationType(0, "Educational"),
+            isExternal = true,
         )
 
         assertThrows<Exception> {
@@ -47,6 +48,7 @@ class OrganizationRepositoryImplTest : TestDatabase() {
         assertEquals(organization.description, addedOrganization.description)
         assertEquals(organization.type?.type, addedOrganization.type?.type)
         assertEquals(1, addedOrganization.type?.id)
+        assertEquals(organization.isExternal, addedOrganization.isExternal)
 
         // Получаем организацию по ID
         val retrievedOrganization = repository.getById(addedOrganization.id)
@@ -57,6 +59,7 @@ class OrganizationRepositoryImplTest : TestDatabase() {
         assertEquals(addedOrganization.name, retrievedOrganization.name)
         assertEquals(addedOrganization.type?.type, "Educational")
         assertEquals(addedOrganization.type?.id, 1)
+        assertEquals(addedOrganization.isExternal, retrievedOrganization.isExternal)
     }
 
     @Test
@@ -76,7 +79,8 @@ class OrganizationRepositoryImplTest : TestDatabase() {
         // Обновляем организацию
         val updatedOrganization = addedOrganization.copy(
             name = "Updated Organization",
-            description = "Updated Organization Full Name"
+            description = "Updated Organization Full Name",
+            isExternal = true,
         )
 
         val result = repository.update(updatedOrganization)
@@ -85,6 +89,7 @@ class OrganizationRepositoryImplTest : TestDatabase() {
         assertNotNull(result)
         assertEquals(updatedOrganization.name, result.name)
         assertEquals(updatedOrganization.description, result.description)
+        assertEquals(updatedOrganization.isExternal, result.isExternal)
     }
 
     @Test

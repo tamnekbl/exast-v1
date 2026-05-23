@@ -1,7 +1,9 @@
 package com.inrotate
 
+import com.inrotate.analytics.AiServiceConfig
 import com.inrotate.repository.*
 import com.inrotate.routes.*
+import io.github.cdimascio.dotenv.Dotenv
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -11,6 +13,9 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
 fun Application.configureRouting() {
+    val dotenv = Dotenv.load()
+    val aiServiceConfig = AiServiceConfig.from(dotenv)
+
     install(StatusPages) {
         exception<Throwable> { call, cause ->
             call.respondText(text = "500: $cause", status = HttpStatusCode.InternalServerError)
@@ -38,6 +43,7 @@ fun Application.configureRouting() {
                 configureOrganizationTypes(organizationTypeRepository)
                 configureSpecialities(specialityRepository)
                 configureRoles(roleRepository)
+                configureAnalytics(aiServiceConfig)
             }
         }
 

@@ -28,12 +28,16 @@ dependencies {
     implementation(libs.ktor.server.status.pages)
     implementation(libs.ktor.server.netty)
     implementation(libs.ktor.server.auth)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.content.negotiation)
     implementation(libs.logback.classic)
     implementation(libs.dotenv)
     implementation(libs.exposed.core)
     implementation(libs.poi.ooxml)
 
     testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.ktor.client.mock)
     testImplementation(libs.kotlin.test.junit5)
     testImplementation(libs.poi.ooxml)
 }

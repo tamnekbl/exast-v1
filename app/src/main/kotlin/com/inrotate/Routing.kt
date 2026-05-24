@@ -1,7 +1,12 @@
 package com.inrotate
 
+import com.inrotate.analytics.AiAnalyticsService
+import com.inrotate.analytics.AiServiceConfig
+import com.inrotate.analytics.ai.client.HttpAiServiceClient
+import com.inrotate.analytics.ai.dataset.AiTrainingDatasetBuilder
 import com.inrotate.repository.*
 import com.inrotate.routes.*
+import io.github.cdimascio.dotenv.Dotenv
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -11,6 +16,9 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
 fun Application.configureRouting() {
+    val dotenv = Dotenv.load()
+    val aiServiceConfig = AiServiceConfig.from(dotenv)
+
     install(StatusPages) {
         exception<Throwable> { call, cause ->
             call.respondText(text = "500: $cause", status = HttpStatusCode.InternalServerError)
@@ -22,6 +30,14 @@ fun Application.configureRouting() {
     val organizationTypeRepository = OrganizationTypeRepositoryImpl()
     val specialityRepository = SpecialityRepositoryImpl()
     val roleRepository = RoleRepositoryImpl()
+    val aiTrainingDatasetBuilder = AiTrainingDatasetBuilder(eventRepository)
+    val aiAnalyticsService = AiAnalyticsService(
+        config = aiServiceConfig,
+        eventRepository = eventRepository,
+        organizationRepository = organizationRepository,
+        datasetBuilder = aiTrainingDatasetBuilder,
+        aiServiceClient = HttpAiServiceClient(aiServiceConfig),
+    )
 
 
     routing {
@@ -38,6 +54,7 @@ fun Application.configureRouting() {
                 configureOrganizationTypes(organizationTypeRepository)
                 configureSpecialities(specialityRepository)
                 configureRoles(roleRepository)
+                configureAnalytics(aiAnalyticsService, aiTrainingDatasetBuilder)
             }
         }
 

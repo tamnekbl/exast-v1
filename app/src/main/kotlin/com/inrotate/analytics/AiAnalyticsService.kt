@@ -10,6 +10,7 @@ import com.inrotate.analytics.dto.*
 import com.inrotate.models.Organization
 import com.inrotate.repository.EventRepository
 import com.inrotate.repository.OrganizationRepository
+import org.slf4j.LoggerFactory
 import java.nio.charset.StandardCharsets
 
 class AiAnalyticsService(
@@ -23,16 +24,35 @@ class AiAnalyticsService(
         ensureAiEnabled()
 
         return try {
+            logger.info("Starting AI attendance model training")
             val csvBytes = datasetBuilder.buildCsv()
-            if (!csvBytes.hasTrainingRows()) {
+            val trainingRows = csvBytes.trainingRowCount()
+            logger.info("AI training dataset built: rows={}, bytes={}", trainingRows, csvBytes.size)
+
+            if (trainingRows == 0) {
+                logger.warn("AI attendance model training skipped: not enough training data")
                 throw AiTrainingFailedException("Недостаточно данных для обучения модели")
             }
 
-            aiServiceClient.train(csvBytes).toTrainingResultDto()
+            val result = aiServiceClient.train(csvBytes).toTrainingResultDto()
+            logger.info(
+                "AI attendance model training completed: modelVersion={}, datasetSize={}",
+                result.modelVersion,
+                result.datasetSize,
+            )
+            result
         } catch (e: AiServiceUnavailableException) {
             if (e.statusCode in CLIENT_ERROR_STATUS_CODES) {
+                logger.warn("AI attendance model training rejected by AI service: statusCode={}", e.statusCode, e)
                 throw AiTrainingFailedException("Недостаточно данных для обучения модели", e)
             }
+            logger.warn("AI attendance model training failed: AI service unavailable", e)
+            throw e
+        } catch (e: AiTrainingFailedException) {
+            logger.warn("AI attendance model training failed: {}", e.message, e)
+            throw e
+        } catch (e: AnalyticsException) {
+            logger.error("Unexpected AI attendance model training integration error", e)
             throw e
         }
     }
@@ -44,13 +64,26 @@ class AiAnalyticsService(
             ?: throw AnalyticsEntityNotFoundException("Мероприятие не найдено")
 
         return try {
-            aiServiceClient
+            logger.info("Requesting AI attendance prediction for eventId={}", eventId)
+            val prediction = aiServiceClient
                 .predict(AiEventMapper.fromEvent(event))
                 .toAttendancePredictionDto()
+            logger.info(
+                "AI attendance prediction received for eventId={}: predictedParticipants={}, modelVersion={}",
+                eventId,
+                prediction.predictedParticipants,
+                prediction.modelVersion,
+            )
+            prediction
         } catch (e: AiServiceUnavailableException) {
             if (e.statusCode in CLIENT_ERROR_STATUS_CODES) {
+                logger.warn("AI attendance prediction unavailable for eventId={}: model is not trained", eventId, e)
                 throw AiPredictionFailedException("Модель прогнозирования еще не обучена", e)
             }
+            logger.warn("AI attendance prediction failed for eventId={}: AI service unavailable", eventId, e)
+            throw e
+        } catch (e: AnalyticsException) {
+            logger.error("Unexpected AI attendance prediction integration error for eventId={}", eventId, e)
             throw e
         }
     }
@@ -61,16 +94,33 @@ class AiAnalyticsService(
         val organizations = loadOrganizations(request.organizations)
 
         return try {
-            aiServiceClient
+            logger.info(
+                "Requesting AI attendance prediction for draft event: organizationCount={}, typeCount={}",
+                organizations.size,
+                request.types.size,
+            )
+            val prediction = aiServiceClient
                 .predict(AiEventMapper.fromDraftRequest(request, organizations))
                 .toAttendancePredictionDto()
+            logger.info(
+                "AI attendance prediction received for draft event: predictedParticipants={}, modelVersion={}",
+                prediction.predictedParticipants,
+                prediction.modelVersion,
+            )
+            prediction
         } catch (e: AiServiceUnavailableException) {
             if (e.statusCode in CLIENT_ERROR_STATUS_CODES) {
+                logger.warn("AI attendance prediction unavailable for draft event: model is not trained", e)
                 throw AiPredictionFailedException("Модель прогнозирования еще не обучена", e)
             }
+            logger.warn("AI attendance prediction failed for draft event: AI service unavailable", e)
             throw e
         } catch (e: IllegalArgumentException) {
+            logger.warn("AI attendance prediction failed for draft event: invalid request", e)
             throw AnalyticsValidationException("Некорректные параметры мероприятия", e)
+        } catch (e: AnalyticsException) {
+            logger.error("Unexpected AI attendance prediction integration error for draft event", e)
+            throw e
         }
     }
 
@@ -78,11 +128,15 @@ class AiAnalyticsService(
         ensureAiEnabled()
 
         return try {
-            aiServiceClient.getLatestModel().toModelInfoDto()
+            val latestModel = aiServiceClient.getLatestModel().toModelInfoDto()
+            logger.info("Latest AI model metadata received: modelVersion={}", latestModel.modelVersion)
+            latestModel
         } catch (e: AiServiceUnavailableException) {
             if (e.statusCode in CLIENT_ERROR_STATUS_CODES) {
+                logger.warn("Latest AI model metadata unavailable: model is not trained", e)
                 throw AiPredictionFailedException("Модель прогнозирования еще не обучена", e)
             }
+            logger.warn("Latest AI model metadata request failed: AI service unavailable", e)
             throw e
         }
     }
@@ -91,11 +145,15 @@ class AiAnalyticsService(
         ensureAiEnabled()
 
         return try {
-            aiServiceClient.getModels().map { it.toModelInfoDto() }
+            val models = aiServiceClient.getModels().map { it.toModelInfoDto() }
+            logger.info("AI model list received: count={}", models.size)
+            models
         } catch (e: AiServiceUnavailableException) {
             if (e.statusCode in CLIENT_ERROR_STATUS_CODES) {
+                logger.warn("AI model list unavailable: model is not trained", e)
                 throw AiPredictionFailedException("Модель прогнозирования еще не обучена", e)
             }
+            logger.warn("AI model list request failed: AI service unavailable", e)
             throw e
         }
     }
@@ -110,6 +168,11 @@ class AiAnalyticsService(
         }
 
         val available = aiServiceClient.health()
+        if (available) {
+            logger.info("AI service health check succeeded")
+        } else {
+            logger.warn("AI service health check failed")
+        }
         return AiHealthDto(
             enabled = true,
             available = available,
@@ -158,13 +221,15 @@ class AiAnalyticsService(
         warnings = warnings.orEmpty(),
     )
 
-    private fun ByteArray.hasTrainingRows(): Boolean =
+    private fun ByteArray.trainingRowCount(): Int =
         toString(StandardCharsets.UTF_8)
             .lineSequence()
             .filter { it.isNotBlank() }
-            .count() > 1
+            .drop(1)
+            .count()
 
     private companion object {
+        val logger = LoggerFactory.getLogger(AiAnalyticsService::class.java)
         val CLIENT_ERROR_STATUS_CODES = 400..499
     }
 }

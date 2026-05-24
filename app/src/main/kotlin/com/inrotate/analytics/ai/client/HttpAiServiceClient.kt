@@ -19,8 +19,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.net.ConnectException
+
+private val aiClientLogger = LoggerFactory.getLogger(HttpAiServiceClient::class.java)
 
 class HttpAiServiceClient(
     private val config: AiServiceConfig,
@@ -34,15 +37,18 @@ class HttpAiServiceClient(
     override suspend fun health(): Boolean = try {
         val response = httpClient.get("$baseUrl/health")
         response.status.isSuccess()
-    } catch (_: TimeoutCancellationException) {
+    } catch (e: TimeoutCancellationException) {
+        aiClientLogger.warn("AI service health check timed out", e)
         false
     } catch (e: CancellationException) {
         throw e
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        aiClientLogger.warn("AI service health check failed", e)
         false
     }
 
     override suspend fun train(csvBytes: ByteArray): AiTrainingResponse = callAiService("train model") {
+        aiClientLogger.info("Sending AI training dataset to Python service: bytes={}", csvBytes.size)
         val response = httpClient.post("$baseUrl/train") {
             setBody(
                 MultiPartFormDataContent(
@@ -63,29 +69,38 @@ class HttpAiServiceClient(
             )
         }
 
-        response.requireSuccess("train model").body()
+        val result = response.requireSuccess("train model").body<AiTrainingResponse>()
+        aiClientLogger.info("AI training response received: modelVersion={}", result.modelVersion)
+        result
     }
 
     override suspend fun predict(request: AiPredictionRequest): AiPredictionResponse =
         callAiService("predict attendance") {
+            aiClientLogger.info("Sending AI attendance prediction request to Python service")
             val response = httpClient.post("$baseUrl/predict-attendance") {
                 contentType(ContentType.Application.Json)
                 setBody(request)
             }
 
-            response.requireSuccess("predict attendance").body()
+            val result = response.requireSuccess("predict attendance").body<AiPredictionResponse>()
+            aiClientLogger.info("AI prediction response received: modelVersion={}", result.modelVersion)
+            result
         }
 
     override suspend fun getLatestModel(): AiModelMetadata = callAiService("get latest model") {
-        httpClient.get("$baseUrl/models/latest")
+        val result = httpClient.get("$baseUrl/models/latest")
             .requireSuccess("get latest model")
-            .body()
+            .body<AiModelMetadata>()
+        aiClientLogger.info("AI latest model response received: modelVersion={}", result.modelVersion)
+        result
     }
 
     override suspend fun getModels(): List<AiModelMetadata> = callAiService("get models") {
-        httpClient.get("$baseUrl/models")
+        val result = httpClient.get("$baseUrl/models")
             .requireSuccess("get models")
-            .body()
+            .body<List<AiModelMetadata>>()
+        aiClientLogger.info("AI models response received: count={}", result.size)
+        result
     }
 
     private suspend fun HttpResponse.requireSuccess(operation: String): HttpResponse {
@@ -94,6 +109,12 @@ class HttpAiServiceClient(
         }
 
         val responseBody = runCatching { bodyAsText() }.getOrNull()
+        aiClientLogger.warn(
+            "AI service returned non-success status: operation={}, statusCode={}, responseSnippet={}",
+            operation,
+            status.value,
+            responseBody.safeLogSnippet(),
+        )
         throw AiServiceUnavailableException(
             message = "Сервис интеллектуального анализа временно недоступен",
             statusCode = status.value,
@@ -133,15 +154,27 @@ private suspend fun <T> callAiService(operation: String, block: suspend () -> T)
 } catch (e: AnalyticsException) {
     throw e
 } catch (e: TimeoutCancellationException) {
+    aiClientLogger.warn("AI service timeout during {}", operation, e)
     throw AiServiceTimeoutException(e)
 } catch (e: CancellationException) {
     throw e
 } catch (e: ConnectException) {
+    aiClientLogger.warn("AI service unavailable during {}", operation, e)
     throw AiServiceUnavailableException(cause = e)
 } catch (e: SerializationException) {
+    aiClientLogger.warn("AI service returned invalid JSON during {}", operation, e)
     throw AiServiceBadResponseException(e)
 } catch (e: IOException) {
+    aiClientLogger.warn("AI service network error during {}", operation, e)
     throw AiServiceUnavailableException(cause = e)
 } catch (e: IllegalStateException) {
+    aiClientLogger.warn("AI service returned invalid response during {}", operation, e)
     throw AiServiceBadResponseException(e)
 }
+
+private fun String?.safeLogSnippet(maxLength: Int = 500): String =
+    when {
+        isNullOrBlank() -> ""
+        length <= maxLength -> replace("\r", "\\r").replace("\n", "\\n")
+        else -> take(maxLength).replace("\r", "\\r").replace("\n", "\\n") + "...(truncated)"
+    }

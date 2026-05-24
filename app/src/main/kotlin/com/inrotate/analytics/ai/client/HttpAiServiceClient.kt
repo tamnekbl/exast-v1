@@ -26,9 +26,10 @@ class HttpAiServiceClient(
     private val config: AiServiceConfig,
     private val httpClient: HttpClient = createHttpClient(config),
 ) : AiServiceClient {
-    private val baseUrl: String = requireNotNull(config.baseUrl) {
-        "ai.service.baseUrl is required for HttpAiServiceClient"
-    }
+    private val baseUrl: String
+        get() = requireNotNull(config.baseUrl) {
+            "ai.service.baseUrl is required for HttpAiServiceClient"
+        }
 
     override suspend fun health(): Boolean = try {
         val response = httpClient.get("$baseUrl/health")

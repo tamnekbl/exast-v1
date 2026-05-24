@@ -1,6 +1,9 @@
 package com.inrotate
 
+import com.inrotate.analytics.AiAnalyticsService
 import com.inrotate.analytics.AiServiceConfig
+import com.inrotate.analytics.ai.client.HttpAiServiceClient
+import com.inrotate.analytics.ai.dataset.AiTrainingDatasetBuilder
 import com.inrotate.repository.*
 import com.inrotate.routes.*
 import io.github.cdimascio.dotenv.Dotenv
@@ -27,6 +30,13 @@ fun Application.configureRouting() {
     val organizationTypeRepository = OrganizationTypeRepositoryImpl()
     val specialityRepository = SpecialityRepositoryImpl()
     val roleRepository = RoleRepositoryImpl()
+    val aiAnalyticsService = AiAnalyticsService(
+        config = aiServiceConfig,
+        eventRepository = eventRepository,
+        organizationRepository = organizationRepository,
+        datasetBuilder = AiTrainingDatasetBuilder(eventRepository),
+        aiServiceClient = HttpAiServiceClient(aiServiceConfig),
+    )
 
 
     routing {
@@ -43,7 +53,7 @@ fun Application.configureRouting() {
                 configureOrganizationTypes(organizationTypeRepository)
                 configureSpecialities(specialityRepository)
                 configureRoles(roleRepository)
-                configureAnalytics(aiServiceConfig)
+                configureAnalytics(aiAnalyticsService)
             }
         }
 

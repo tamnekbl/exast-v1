@@ -1,61 +1,75 @@
 package com.inrotate.routes
 
-import com.inrotate.analytics.AiServiceConfig
+import com.inrotate.analytics.AiAnalyticsService
+import com.inrotate.analytics.AnalyticsException
+import com.inrotate.analytics.dto.EventDraftRequest
 import io.ktor.http.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-fun Route.configureAnalytics(aiServiceConfig: AiServiceConfig) {
+fun Route.configureAnalytics(analyticsService: AiAnalyticsService) {
     route("/analytics") {
-        post("/models/train") {
-            if (!aiServiceConfig.enabled) {
-                return@post call.respondAiDisabled()
-            }
-
-            call.respond(
-                HttpStatusCode.NotImplemented,
-                ApiResponse("AI analytics integration is not implemented yet", false)
-            )
+        get("/health") {
+            call.respond(HttpStatusCode.OK, analyticsService.checkAiHealth())
         }
 
-        post("/predict") {
-            if (!aiServiceConfig.enabled) {
-                return@post call.respondAiDisabled()
+        post("/train") {
+            respondAnalytics {
+                analyticsService.trainAttendanceModel()
             }
+        }
 
-            call.respond(
-                HttpStatusCode.NotImplemented,
-                ApiResponse("AI analytics integration is not implemented yet", false)
-            )
+        post("/events/{eventId}/predict-attendance") {
+            val eventId = call.parameters["eventId"]?.toIntOrNull()
+                ?: return@post call.respond(
+                    HttpStatusCode.BadRequest,
+                    ApiResponse("Invalid or missing eventId", false),
+                )
+
+            respondAnalytics {
+                analyticsService.predictAttendanceForEvent(eventId)
+            }
+        }
+
+        post("/predict-attendance") {
+            val request = call.receive<EventDraftRequest>()
+
+            respondAnalytics {
+                analyticsService.predictAttendanceForDraft(request)
+            }
         }
 
         get("/models/latest") {
-            if (!aiServiceConfig.enabled) {
-                return@get call.respondAiDisabled()
+            respondAnalytics {
+                analyticsService.getLatestModel()
             }
-
-            call.respond(
-                HttpStatusCode.NotImplemented,
-                ApiResponse("AI analytics integration is not implemented yet", false)
-            )
         }
 
         get("/models") {
-            if (!aiServiceConfig.enabled) {
-                return@get call.respondAiDisabled()
+            respondAnalytics {
+                analyticsService.getModels()
             }
-
-            call.respond(
-                HttpStatusCode.NotImplemented,
-                ApiResponse("AI analytics integration is not implemented yet", false)
-            )
         }
     }
 }
 
-private suspend fun io.ktor.server.application.ApplicationCall.respondAiDisabled() {
-    respond(
-        HttpStatusCode.ServiceUnavailable,
-        ApiResponse("AI service integration is disabled", false)
-    )
+private suspend inline fun <reified T : Any> RoutingContext.respondAnalytics(
+    crossinline block: suspend () -> T,
+) {
+    try {
+        call.respond(HttpStatusCode.OK, block())
+    } catch (e: AnalyticsException) {
+        call.respond(e.toHttpStatus(), ApiResponse(e.message, false))
+    }
+}
+
+private fun AnalyticsException.toHttpStatus(): HttpStatusCode = when (code) {
+    AnalyticsException.Code.AI_DISABLED,
+    AnalyticsException.Code.AI_UNAVAILABLE -> HttpStatusCode.ServiceUnavailable
+
+    AnalyticsException.Code.EVENT_NOT_FOUND,
+    AnalyticsException.Code.ORGANIZATION_NOT_FOUND -> HttpStatusCode.NotFound
+
+    AnalyticsException.Code.INVALID_REQUEST -> HttpStatusCode.BadRequest
 }

@@ -118,7 +118,7 @@ class AiAnalyticsService(
         block()
     } catch (e: AiServiceException) {
         throw AnalyticsException(
-            message = "AI service error during $operation: ${e.message}",
+            message = "AI service is unavailable during $operation",
             code = AnalyticsException.Code.AI_UNAVAILABLE,
             cause = e,
         )
@@ -136,7 +136,7 @@ class AiAnalyticsService(
         datasetSize = datasetSize,
         metrics = metrics,
         status = status,
-        warnings = warnings.orEmpty(),
+        warnings = warnings,
     )
 
     private fun AiPredictionResponse.toAttendancePredictionDto(): AttendancePredictionDto = AttendancePredictionDto(

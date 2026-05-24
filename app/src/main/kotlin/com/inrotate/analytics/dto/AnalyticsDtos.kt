@@ -13,7 +13,7 @@ data class TrainingResultDto(
     val datasetSize: Int,
     val metrics: Map<String, Double>,
     val status: String,
-    val warnings: List<String> = emptyList(),
+    val warnings: List<String>? = null,
 )
 
 @Serializable

@@ -42,7 +42,7 @@ class AiAnalyticsService(
             )
             result
         } catch (e: AiServiceUnavailableException) {
-            if (e.statusCode in CLIENT_ERROR_STATUS_CODES) {
+            if (e.statusCode in MODEL_NOT_READY_STATUS_CODES) {
                 logger.warn("AI attendance model training rejected by AI service: statusCode={}", e.statusCode, e)
                 throw AiTrainingFailedException("Недостаточно данных для обучения модели", e)
             }
@@ -76,7 +76,7 @@ class AiAnalyticsService(
             )
             prediction
         } catch (e: AiServiceUnavailableException) {
-            if (e.statusCode in CLIENT_ERROR_STATUS_CODES) {
+            if (e.statusCode in MODEL_NOT_READY_STATUS_CODES) {
                 logger.warn("AI attendance prediction unavailable for eventId={}: model is not trained", eventId, e)
                 throw AiPredictionFailedException("Модель прогнозирования еще не обучена", e)
             }
@@ -109,7 +109,7 @@ class AiAnalyticsService(
             )
             prediction
         } catch (e: AiServiceUnavailableException) {
-            if (e.statusCode in CLIENT_ERROR_STATUS_CODES) {
+            if (e.statusCode in MODEL_NOT_READY_STATUS_CODES) {
                 logger.warn("AI attendance prediction unavailable for draft event: model is not trained", e)
                 throw AiPredictionFailedException("Модель прогнозирования еще не обучена", e)
             }
@@ -132,7 +132,7 @@ class AiAnalyticsService(
             logger.info("Latest AI model metadata received: modelVersion={}", latestModel.modelVersion)
             latestModel
         } catch (e: AiServiceUnavailableException) {
-            if (e.statusCode in CLIENT_ERROR_STATUS_CODES) {
+            if (e.statusCode in MODEL_NOT_READY_STATUS_CODES) {
                 logger.warn("Latest AI model metadata unavailable: model is not trained", e)
                 throw AiPredictionFailedException("Модель прогнозирования еще не обучена", e)
             }
@@ -149,7 +149,7 @@ class AiAnalyticsService(
             logger.info("AI model list received: count={}", models.size)
             models
         } catch (e: AiServiceUnavailableException) {
-            if (e.statusCode in CLIENT_ERROR_STATUS_CODES) {
+            if (e.statusCode in MODEL_NOT_READY_STATUS_CODES) {
                 logger.warn("AI model list unavailable: model is not trained", e)
                 throw AiPredictionFailedException("Модель прогнозирования еще не обучена", e)
             }
@@ -230,6 +230,6 @@ class AiAnalyticsService(
 
     private companion object {
         val logger = LoggerFactory.getLogger(AiAnalyticsService::class.java)
-        val CLIENT_ERROR_STATUS_CODES = 400..499
+        val MODEL_NOT_READY_STATUS_CODES = setOf(404, 409)
     }
 }

@@ -4,10 +4,7 @@ import com.inrotate.analytics.ai.dto.AiPredictionRequest
 import com.inrotate.models.*
 import kotlinx.serialization.json.Json
 import java.time.LocalDateTime
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNull
+import kotlin.test.*
 
 class AiEventMapperTest {
     @Test
@@ -18,6 +15,21 @@ class AiEventMapperTest {
 
         assertFalse(json.contains("participantsTotal"))
         assertFalse(json.contains("participants_total"))
+    }
+
+    @Test
+    fun `prediction request is serialized with python snake case fields`() {
+        val request = AiEventMapper.fromEvent(testEvent())
+
+        val json = Json.encodeToString<AiPredictionRequest>(request)
+
+        assertTrue(json.contains("date_start"))
+        assertTrue(json.contains("date_end"))
+        assertTrue(json.contains("time_start"))
+        assertTrue(json.contains("time_end"))
+        assertTrue(json.contains("organization_role"))
+        assertFalse(json.contains("dateStart"))
+        assertFalse(json.contains("organizationRole"))
     }
 
     @Test

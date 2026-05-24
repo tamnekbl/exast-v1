@@ -10,12 +10,17 @@ typealias LocalTime = String
 data class AiPredictionRequest(
     val title: String,
     val description: String?,
+    @SerialName("date_start")
     val dateStart: LocalDate,
+    @SerialName("date_end")
     val dateEnd: LocalDate?,
+    @SerialName("time_start")
     val timeStart: LocalTime?,
+    @SerialName("time_end")
     val timeEnd: LocalTime?,
     val level: String,
     val format: String,
+    @SerialName("organization_role")
     val organizationRole: String,
     val types: List<String>,
     val organizations: List<AiOrganizationDto>,

@@ -115,6 +115,14 @@ class HttpAiServiceClient(
             status.value,
             responseBody.safeLogSnippet(),
         )
+        if (status.value == HttpStatusCode.UnprocessableEntity.value || status.value == HttpStatusCode.BadRequest.value) {
+            throw AiServiceBadResponseException(
+                IllegalStateException(
+                    "AI service rejected request during $operation: HTTP ${status.value}${responseBody.asSuffix()}",
+                ),
+            )
+        }
+
         throw AiServiceUnavailableException(
             message = "Сервис интеллектуального анализа временно недоступен",
             statusCode = status.value,

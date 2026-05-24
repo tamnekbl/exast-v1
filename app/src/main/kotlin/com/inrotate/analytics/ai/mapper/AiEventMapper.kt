@@ -53,17 +53,15 @@ object AiEventMapper {
         request: EventDraftRequest,
         organizations: List<Organization>,
     ): AiPredictionRequest {
-        val startedAt = LocalDateTime.parse(request.startedAt)
-        val endedAt = request.endedAt?.let { LocalDateTime.parse(it) }
         val organizationsById = organizations.associateBy { it.id }
 
         return AiPredictionRequest(
             title = request.title,
             description = request.description,
-            dateStart = startedAt.toLocalDate().toString(),
-            dateEnd = endedAt?.toLocalDate()?.toString(),
-            timeStart = startedAt.toLocalTime().toString(),
-            timeEnd = endedAt?.toLocalTime()?.toString(),
+            dateStart = request.dateStart,
+            dateEnd = request.dateEnd,
+            timeStart = request.timeStart,
+            timeEnd = request.timeEnd,
             level = request.level.name,
             format = request.format.name,
             organizationRole = request.organizationRole.name,

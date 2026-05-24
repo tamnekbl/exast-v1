@@ -1,6 +1,7 @@
 package com.inrotate.analytics.ai.mapper
 
 import com.inrotate.analytics.ai.dto.AiPredictionRequest
+import com.inrotate.analytics.dto.EventDraftRequest
 import com.inrotate.models.*
 import kotlinx.serialization.json.Json
 import java.time.LocalDateTime
@@ -50,25 +51,22 @@ class AiEventMapperTest {
 
     @Test
     fun `empty description does not break draft mapping`() {
-        val draft = EventRequest(
+        val draft = EventDraftRequest(
             title = "Draft event",
             description = null,
-            startedAt = "2026-06-01T10:15:00",
-            endedAt = null,
+            dateStart = "2026-06-01",
+            dateEnd = null,
+            timeStart = "10:15",
+            timeEnd = null,
             level = EventLevel.university,
             location = null,
-            participantsTotal = 0,
-            participantsOther = 0,
-            participantsSpo = 0,
-            participantsVo = 0,
-            participantsForeign = 0,
             format = EventFormat.offline,
             organizationRole = OrganizationRole.organization,
             types = listOf(EventType.cultural_creative),
             organizations = listOf(67),
         )
 
-        val request = AiEventMapper.fromEventRequest(
+        val request = AiEventMapper.fromDraftRequest(
             request = draft,
             organizations = listOf(testOrganization()),
         )

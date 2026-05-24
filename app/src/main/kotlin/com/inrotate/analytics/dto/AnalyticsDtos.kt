@@ -45,8 +45,10 @@ data class AiHealthDto(
 data class EventDraftRequest(
     val title: String,
     val description: String?,
-    val startedAt: String,
-    val endedAt: String?,
+    val dateStart: String,
+    val dateEnd: String?,
+    val timeStart: String?,
+    val timeEnd: String?,
     val level: EventLevel,
     val location: String?,
     val format: EventFormat,

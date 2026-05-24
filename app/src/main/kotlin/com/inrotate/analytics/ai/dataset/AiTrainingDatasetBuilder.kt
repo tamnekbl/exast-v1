@@ -40,7 +40,7 @@ class AiTrainingDatasetBuilder(
         json.encodeToString(
             organizations.map { organization ->
                 AiOrganizationDto(
-                    id = organization.id,
+                    id = organization.id.toLong(),
                     name = organization.name,
                     type = organization.type?.type,
                     isExternal = organization.isExternal,

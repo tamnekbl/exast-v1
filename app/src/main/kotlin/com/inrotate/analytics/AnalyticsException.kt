@@ -29,6 +29,18 @@ class AiServiceBadResponseException(
     cause = cause,
 )
 
+class AiModelNotFoundException(
+    cause: Throwable? = null,
+) : AnalyticsException(
+    message = "Модель прогнозирования еще не обучена. Сначала запустите обучение модели",
+    cause = cause,
+)
+
+class AiBadRequestException(
+    message: String = "Некорректный запрос к сервису интеллектуального анализа",
+    cause: Throwable? = null,
+) : AnalyticsException(message, cause)
+
 class AiTrainingFailedException(
     message: String,
     cause: Throwable? = null,

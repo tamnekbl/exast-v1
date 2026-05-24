@@ -10,18 +10,24 @@ import kotlinx.serialization.Serializable
 data class TrainingResultDto(
     val modelVersion: String,
     val trainedAt: String,
-    val datasetSize: Int,
     val metrics: Map<String, Double>,
-    val status: String,
-    val warnings: List<String>? = null,
+    val baselineMetrics: Map<String, Double> = emptyMap(),
+    val warnings: List<String> = emptyList(),
+    val featureSchema: List<String> = emptyList(),
+    val classLabels: List<String> = emptyList(),
+    val classDescriptions: Map<String, String> = emptyMap(),
 )
 
 @Serializable
-data class AttendancePredictionDto(
-    val predictedParticipants: Double,
-    val modelVersion: String,
+data class EventScalePredictionDto(
+    val predictedScale: String,
+    val description: String,
+    val participantsRange: String,
+    val probabilities: Map<String, Double>,
+    val confidence: Double,
+    val modelVersion: String?,
     val modelTrainedAt: String?,
-    val metrics: Map<String, Double>?,
+    val metrics: Map<String, Double> = emptyMap(),
     val warnings: List<String> = emptyList(),
 )
 

@@ -47,7 +47,35 @@ fun Route.configureAnalytics(
             }
         }
 
+        post("/events/{eventId}/predict-scale") {
+            val eventId = call.parameters["eventId"]?.toIntOrNull()
+                ?: return@post call.respond(
+                    HttpStatusCode.BadRequest,
+                    ApiResponse("Invalid or missing eventId", false),
+                )
+
+            respondAnalytics {
+                analyticsService.predictAttendanceForEvent(eventId)
+            }
+        }
+
         post("/predict-attendance") {
+            val request = try {
+                call.receive<EventDraftRequest>()
+            } catch (e: Exception) {
+                analyticsLogger.warn("Invalid analytics draft request", e)
+                return@post call.respond(
+                    HttpStatusCode.BadRequest,
+                    ApiResponse("Некорректные параметры мероприятия", false),
+                )
+            }
+
+            respondAnalytics {
+                analyticsService.predictAttendanceForDraft(request)
+            }
+        }
+
+        post("/predict-scale") {
             val request = try {
                 call.receive<EventDraftRequest>()
             } catch (e: Exception) {
@@ -93,6 +121,8 @@ private fun AnalyticsException.toHttpStatus(): HttpStatusCode = when (this) {
     is AiServiceUnavailableException -> HttpStatusCode.ServiceUnavailable
     is AiServiceTimeoutException -> HttpStatusCode.GatewayTimeout
     is AiServiceBadResponseException -> HttpStatusCode.BadGateway
+    is AiModelNotFoundException -> HttpStatusCode.Conflict
+    is AiBadRequestException -> HttpStatusCode.BadRequest
     is AiTrainingFailedException -> HttpStatusCode.BadRequest
     is AiPredictionFailedException -> HttpStatusCode.Conflict
     is AnalyticsValidationException -> HttpStatusCode.BadRequest

@@ -1,10 +1,8 @@
 package com.inrotate.analytics.ai.client
 
-import com.inrotate.analytics.AiServiceBadResponseException
-import com.inrotate.analytics.AiServiceConfig
-import com.inrotate.analytics.AiServiceTimeoutException
-import com.inrotate.analytics.AiServiceUnavailableException
-import com.inrotate.analytics.ai.dto.AiPredictionRequest
+import com.inrotate.analytics.*
+import com.inrotate.analytics.ai.dto.AiEventScalePredictionRequest
+import com.inrotate.analytics.ai.dto.EventScale
 import io.ktor.client.*
 import io.ktor.client.engine.mock.*
 import io.ktor.client.plugins.*
@@ -31,10 +29,14 @@ class HttpAiServiceClientTest {
                 respond(
                     content = """
                         {
-                          "predicted_participants": 123.5,
-                          "model_version": "v1",
-                          "model_trained_at": "2026-05-24T10:00:00",
-                          "metrics": {"mae": 2.1},
+                          "predictedScale": "large_51_200",
+                          "description": "Крупное мероприятие: 51-200 участников",
+                          "participantsRange": "51-200",
+                          "probabilities": {"small_1_20": 0.12, "large_51_200": 0.51},
+                          "confidence": 0.51,
+                          "modelVersion": "v1",
+                          "modelTrainedAt": "2026-05-24T10:00:00",
+                          "metrics": {"accuracy": 0.5},
                           "warnings": []
                         }
                     """.trimIndent(),
@@ -47,8 +49,44 @@ class HttpAiServiceClientTest {
 
         assertEquals(HttpMethod.Post, capturedRequest?.method)
         assertEquals("/predict-attendance", capturedRequest?.url?.encodedPath)
-        assertEquals(123.5, response.predictedParticipants)
+        assertEquals(EventScale.LARGE_51_200, response.predictedScale)
+        assertEquals(0.51, response.confidence)
+        assertEquals(0.51, response.probabilities.getValue("large_51_200"))
         assertEquals("v1", response.modelVersion)
+    }
+
+    @Test
+    fun `train parses metrics with nested classification report`() = runBlocking {
+        val client = testClient(
+            MockEngine {
+                respond(
+                    content = """
+                        {
+                          "modelVersion": "event_scale_v1",
+                          "trainedAt": "2026-05-24T12:38:44",
+                          "metrics": {
+                            "accuracy": 0.46,
+                            "balanced_accuracy": 0.47,
+                            "classification_report": {
+                              "small_1_20": {"precision": 0.5}
+                            }
+                          },
+                          "baselineMetrics": {"accuracy": 0.33},
+                          "warnings": [],
+                          "featureSchema": ["level"],
+                          "classLabels": ["small_1_20"],
+                          "classDescriptions": {"small_1_20": "small"}
+                        }
+                    """.trimIndent(),
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                )
+            },
+        )
+
+        val response = client.train("csv".toByteArray())
+
+        assertEquals("event_scale_v1", response.modelVersion)
+        assertTrue(response.metrics.containsKey("classification_report"))
     }
 
     @Test
@@ -96,6 +134,65 @@ class HttpAiServiceClientTest {
     }
 
     @Test
+    fun `predict maps model not found to model not found exception`() = runBlocking {
+        val client = testClient(
+            MockEngine {
+                respond(
+                    content = """{"error":"MODEL_NOT_FOUND","message":"No trained models found in model registry.","details":{}}""",
+                    status = HttpStatusCode.NotFound,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                )
+            },
+        )
+
+        assertFailsWith<AiModelNotFoundException> {
+            client.predict(testPredictionRequest())
+        }
+    }
+
+    @Test
+    fun `predict maps bad request to bad request exception`() = runBlocking {
+        val client = testClient(
+            MockEngine {
+                respond(
+                    content = """{"error":"REQUEST_VALIDATION_ERROR","message":"Request validation failed.","details":{}}""",
+                    status = HttpStatusCode.BadRequest,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                )
+            },
+        )
+
+        assertFailsWith<AiBadRequestException> {
+            client.predict(testPredictionRequest())
+        }
+    }
+
+    @Test
+    fun `getLatestModel parses snake case model metadata`() = runBlocking {
+        val client = testClient(
+            MockEngine {
+                respond(
+                    content = """
+                        {
+                          "model_version": "event_scale_v1",
+                          "trained_at": "2026-05-24T12:38:44",
+                          "metrics": {"accuracy": 0.46},
+                          "baseline_metrics": {"accuracy": 0.33},
+                          "warnings": []
+                        }
+                    """.trimIndent(),
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                )
+            },
+        )
+
+        val model = client.getLatestModel()
+
+        assertEquals("event_scale_v1", model.modelVersion)
+        assertEquals("2026-05-24T12:38:44", model.trainedAt)
+    }
+
+    @Test
     fun `predict serializes request using snake case fields`() = runBlocking {
         var body = ""
         val client = testClient(
@@ -105,7 +202,7 @@ class HttpAiServiceClientTest {
                     .decodeToString()
                 respond(
                     content = """
-                        {"predicted_participants":1.0,"model_version":"v1","model_trained_at":null,"metrics":null,"warnings":[]}
+                        {"predictedScale":"large_51_200","description":"large","participantsRange":"51-200","probabilities":{"large_51_200":1.0},"confidence":1.0,"modelVersion":"v1","modelTrainedAt":null,"metrics":{},"warnings":[]}
                     """.trimIndent(),
                     headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
                 )
@@ -150,7 +247,7 @@ class HttpAiServiceClientTest {
         return HttpAiServiceClient(config, httpClient)
     }
 
-    private fun testPredictionRequest(): AiPredictionRequest = AiPredictionRequest(
+    private fun testPredictionRequest(): AiEventScalePredictionRequest = AiEventScalePredictionRequest(
         title = "Event",
         description = null,
         dateStart = "2026-06-01",

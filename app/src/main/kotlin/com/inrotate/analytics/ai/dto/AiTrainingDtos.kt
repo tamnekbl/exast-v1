@@ -1,17 +1,25 @@
+@file:OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+
 package com.inrotate.analytics.ai.dto
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNames
 
 @Serializable
 data class AiTrainingResponse(
-    @SerialName("model_version")
+    @JsonNames("model_version")
     val modelVersion: String,
-    @SerialName("trained_at")
+    @JsonNames("trained_at")
     val trainedAt: String,
-    @SerialName("dataset_size")
-    val datasetSize: Int,
-    val metrics: Map<String, Double>,
-    val status: String,
-    val warnings: List<String>? = null,
+    val metrics: Map<String, JsonElement> = emptyMap(),
+    @JsonNames("baseline_metrics")
+    val baselineMetrics: Map<String, JsonElement> = emptyMap(),
+    val warnings: List<String> = emptyList(),
+    @JsonNames("feature_schema")
+    val featureSchema: List<String> = emptyList(),
+    @JsonNames("class_labels")
+    val classLabels: List<String> = emptyList(),
+    @JsonNames("class_descriptions")
+    val classDescriptions: Map<String, String> = emptyMap(),
 )

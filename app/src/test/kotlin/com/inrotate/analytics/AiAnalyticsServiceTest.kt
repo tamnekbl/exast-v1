@@ -2,11 +2,9 @@ package com.inrotate.analytics
 
 import com.inrotate.analytics.ai.client.AiServiceClient
 import com.inrotate.analytics.ai.dataset.AiTrainingDatasetBuilder
-import com.inrotate.analytics.ai.dto.AiModelMetadata
-import com.inrotate.analytics.ai.dto.AiPredictionRequest
-import com.inrotate.analytics.ai.dto.AiPredictionResponse
-import com.inrotate.analytics.ai.dto.AiTrainingResponse
+import com.inrotate.analytics.ai.dto.*
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -32,7 +30,8 @@ class AiAnalyticsServiceTest {
 
         val result = service.predictAttendanceForEvent(1)
 
-        assertEquals(42.0, result.predictedParticipants)
+        assertEquals("large_51_200", result.predictedScale)
+        assertEquals(0.51, result.confidence)
         assertEquals(1, aiClient.predictCalls)
         assertEquals("Existing event", aiClient.lastPredictionRequest?.title)
         assertEquals("cultural_creative", aiClient.lastPredictionRequest?.types?.single())
@@ -103,9 +102,9 @@ class AiAnalyticsServiceTest {
         var trainCalls = 0
         var predictCalls = 0
         var trainedCsv: ByteArray? = null
-        var lastPredictionRequest: AiPredictionRequest? = null
+        var lastPredictionRequest: AiEventScalePredictionRequest? = null
 
-        override suspend fun health(): Boolean = true
+        override suspend fun health(): AiHealthResponse = AiHealthResponse("ok")
 
         override suspend fun train(csvBytes: ByteArray): AiTrainingResponse {
             trainCalls++
@@ -113,22 +112,28 @@ class AiAnalyticsServiceTest {
             return AiTrainingResponse(
                 modelVersion = "model-v1",
                 trainedAt = "2026-05-24T10:00:00",
-                datasetSize = 1,
-                metrics = mapOf("mae" to 1.0),
-                status = "trained",
+                metrics = mapOf("accuracy" to JsonPrimitive(1.0)),
+                baselineMetrics = emptyMap(),
                 warnings = emptyList(),
+                featureSchema = emptyList(),
+                classLabels = listOf("large_51_200"),
+                classDescriptions = mapOf("large_51_200" to "large"),
             )
         }
 
-        override suspend fun predict(request: AiPredictionRequest): AiPredictionResponse {
+        override suspend fun predict(request: AiEventScalePredictionRequest): AiEventScalePredictionResponse {
             predictCalls++
             lastPredictionRequest = request
             predictException?.let { throw it }
-            return AiPredictionResponse(
-                predictedParticipants = 42.0,
+            return AiEventScalePredictionResponse(
+                predictedScale = EventScale.LARGE_51_200,
+                description = "large",
+                participantsRange = "51-200",
+                probabilities = mapOf("large_51_200" to 0.51),
+                confidence = 0.51,
                 modelVersion = "model-v1",
                 modelTrainedAt = "2026-05-24T10:00:00",
-                metrics = mapOf("mae" to 1.0),
+                metrics = mapOf("accuracy" to JsonPrimitive(1.0)),
                 warnings = emptyList(),
             )
         }
@@ -136,8 +141,8 @@ class AiAnalyticsServiceTest {
         override suspend fun getLatestModel(): AiModelMetadata = AiModelMetadata(
             modelVersion = "model-v1",
             trainedAt = "2026-05-24T10:00:00",
-            metrics = mapOf("mae" to 1.0),
-            baselineMetrics = null,
+            metrics = mapOf("accuracy" to JsonPrimitive(1.0)),
+            baselineMetrics = emptyMap(),
             warnings = emptyList(),
         )
 

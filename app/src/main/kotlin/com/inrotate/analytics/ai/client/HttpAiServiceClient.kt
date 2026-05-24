@@ -1,10 +1,7 @@
 package com.inrotate.analytics.ai.client
 
 import com.inrotate.analytics.*
-import com.inrotate.analytics.ai.dto.AiModelMetadata
-import com.inrotate.analytics.ai.dto.AiPredictionRequest
-import com.inrotate.analytics.ai.dto.AiPredictionResponse
-import com.inrotate.analytics.ai.dto.AiTrainingResponse
+import com.inrotate.analytics.ai.dto.*
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
@@ -34,17 +31,15 @@ class HttpAiServiceClient(
             "ai.service.baseUrl is required for HttpAiServiceClient"
         }
 
-    override suspend fun health(): Boolean = try {
+    override suspend fun health(): AiHealthResponse = callAiService("health check") {
         val response = httpClient.get("$baseUrl/health")
-        response.status.isSuccess()
-    } catch (e: TimeoutCancellationException) {
-        aiClientLogger.warn("AI service health check timed out", e)
-        false
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        aiClientLogger.warn("AI service health check failed", e)
-        false
+        val health = response.requireSuccess("health check").body<AiHealthResponse>()
+        if (health.status != "ok") {
+            throw AiServiceBadResponseException(
+                IllegalStateException("AI service health status is ${health.status}"),
+            )
+        }
+        health
     }
 
     override suspend fun train(csvBytes: ByteArray): AiTrainingResponse = callAiService("train model") {
@@ -74,7 +69,7 @@ class HttpAiServiceClient(
         result
     }
 
-    override suspend fun predict(request: AiPredictionRequest): AiPredictionResponse =
+    override suspend fun predict(request: AiEventScalePredictionRequest): AiEventScalePredictionResponse =
         callAiService("predict attendance") {
             aiClientLogger.info("Sending AI attendance prediction request to Python service")
             val response = httpClient.post("$baseUrl/predict-attendance") {
@@ -82,8 +77,13 @@ class HttpAiServiceClient(
                 setBody(request)
             }
 
-            val result = response.requireSuccess("predict attendance").body<AiPredictionResponse>()
-            aiClientLogger.info("AI prediction response received: modelVersion={}", result.modelVersion)
+            val result = response.requireSuccess("predict attendance").body<AiEventScalePredictionResponse>()
+            aiClientLogger.info(
+                "AI prediction response received: predictedScale={}, confidence={}, modelVersion={}",
+                result.predictedScale,
+                result.confidence,
+                result.modelVersion,
+            )
             result
         }
 
@@ -115,9 +115,16 @@ class HttpAiServiceClient(
             status.value,
             responseBody.safeLogSnippet(),
         )
+        val error = responseBody.parseAiError()
+        if (status.value == HttpStatusCode.NotFound.value && error?.error == "MODEL_NOT_FOUND") {
+            throw AiModelNotFoundException(
+                IllegalStateException("AI model not found during $operation: ${error.message}"),
+            )
+        }
         if (status.value == HttpStatusCode.UnprocessableEntity.value || status.value == HttpStatusCode.BadRequest.value) {
-            throw AiServiceBadResponseException(
-                IllegalStateException(
+            throw AiBadRequestException(
+                message = error?.message ?: "Некорректный запрос к сервису интеллектуального анализа",
+                cause = IllegalStateException(
                     "AI service rejected request during $operation: HTTP ${status.value}${responseBody.asSuffix()}",
                 ),
             )
@@ -157,6 +164,11 @@ class HttpAiServiceClient(
     }
 }
 
+private val aiJson = Json {
+    ignoreUnknownKeys = true
+    explicitNulls = false
+}
+
 private suspend fun <T> callAiService(operation: String, block: suspend () -> T): T = try {
     block()
 } catch (e: AnalyticsException) {
@@ -186,3 +198,6 @@ private fun String?.safeLogSnippet(maxLength: Int = 500): String =
         length <= maxLength -> replace("\r", "\\r").replace("\n", "\\n")
         else -> take(maxLength).replace("\r", "\\r").replace("\n", "\\n") + "...(truncated)"
     }
+
+private fun String?.parseAiError(): AiErrorResponse? =
+    if (isNullOrBlank()) null else runCatching { aiJson.decodeFromString<AiErrorResponse>(this) }.getOrNull()

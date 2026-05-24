@@ -30,11 +30,12 @@ fun Application.configureRouting() {
     val organizationTypeRepository = OrganizationTypeRepositoryImpl()
     val specialityRepository = SpecialityRepositoryImpl()
     val roleRepository = RoleRepositoryImpl()
+    val aiTrainingDatasetBuilder = AiTrainingDatasetBuilder(eventRepository)
     val aiAnalyticsService = AiAnalyticsService(
         config = aiServiceConfig,
         eventRepository = eventRepository,
         organizationRepository = organizationRepository,
-        datasetBuilder = AiTrainingDatasetBuilder(eventRepository),
+        datasetBuilder = aiTrainingDatasetBuilder,
         aiServiceClient = HttpAiServiceClient(aiServiceConfig),
     )
 
@@ -53,7 +54,7 @@ fun Application.configureRouting() {
                 configureOrganizationTypes(organizationTypeRepository)
                 configureSpecialities(specialityRepository)
                 configureRoles(roleRepository)
-                configureAnalytics(aiAnalyticsService)
+                configureAnalytics(aiAnalyticsService, aiTrainingDatasetBuilder)
             }
         }
 

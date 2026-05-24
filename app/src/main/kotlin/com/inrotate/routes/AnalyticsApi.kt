@@ -1,6 +1,7 @@
 package com.inrotate.routes
 
 import com.inrotate.analytics.*
+import com.inrotate.analytics.ai.dataset.AiTrainingDatasetBuilder
 import com.inrotate.analytics.dto.EventDraftRequest
 import io.ktor.http.*
 import io.ktor.server.request.*
@@ -10,10 +11,22 @@ import org.slf4j.LoggerFactory
 
 private val analyticsLogger = LoggerFactory.getLogger("AnalyticsApi")
 
-fun Route.configureAnalytics(analyticsService: AiAnalyticsService) {
+fun Route.configureAnalytics(
+    analyticsService: AiAnalyticsService,
+    datasetBuilder: AiTrainingDatasetBuilder,
+) {
     route("/analytics") {
         get("/health") {
             call.respond(HttpStatusCode.OK, analyticsService.checkAiHealth())
+        }
+
+        get("/dataset") {
+            val csvBytes = datasetBuilder.buildCsv()
+            call.respondBytes(
+                bytes = csvBytes,
+                contentType = ContentType.Text.CSV.withParameter("charset", "utf-8"),
+                status = HttpStatusCode.OK,
+            )
         }
 
         post("/train") {

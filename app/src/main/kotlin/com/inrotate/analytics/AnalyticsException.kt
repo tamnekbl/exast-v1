@@ -1,15 +1,49 @@
 package com.inrotate.analytics
 
-class AnalyticsException(
+open class AnalyticsException(
     message: String,
-    val code: Code,
     cause: Throwable? = null,
-) : RuntimeException(message, cause) {
-    enum class Code {
-        AI_DISABLED,
-        AI_UNAVAILABLE,
-        EVENT_NOT_FOUND,
-        ORGANIZATION_NOT_FOUND,
-        INVALID_REQUEST,
-    }
-}
+) : RuntimeException(message, cause)
+
+class AiServiceDisabledException : AnalyticsException(
+    message = "Сервис интеллектуального анализа отключен",
+)
+
+open class AiServiceUnavailableException(
+    message: String = "Сервис интеллектуального анализа временно недоступен",
+    cause: Throwable? = null,
+    val statusCode: Int? = null,
+) : AnalyticsException(message, cause)
+
+class AiServiceTimeoutException(
+    cause: Throwable? = null,
+) : AnalyticsException(
+    message = "Сервис интеллектуального анализа временно недоступен",
+    cause = cause,
+)
+
+class AiServiceBadResponseException(
+    cause: Throwable? = null,
+) : AnalyticsException(
+    message = "Сервис интеллектуального анализа вернул некорректный ответ",
+    cause = cause,
+)
+
+class AiTrainingFailedException(
+    message: String,
+    cause: Throwable? = null,
+) : AnalyticsException(message, cause)
+
+class AiPredictionFailedException(
+    message: String,
+    cause: Throwable? = null,
+) : AnalyticsException(message, cause)
+
+class AnalyticsValidationException(
+    message: String,
+    cause: Throwable? = null,
+) : AnalyticsException(message, cause)
+
+class AnalyticsEntityNotFoundException(
+    message: String,
+) : AnalyticsException(message)

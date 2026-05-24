@@ -1,6 +1,6 @@
 package com.inrotate.analytics.ai.client
 
-import com.inrotate.analytics.AiServiceConfig
+import com.inrotate.analytics.*
 import com.inrotate.analytics.ai.dto.AiModelMetadata
 import com.inrotate.analytics.ai.dto.AiPredictionRequest
 import com.inrotate.analytics.ai.dto.AiPredictionResponse
@@ -94,15 +94,12 @@ class HttpAiServiceClient(
         }
 
         val responseBody = runCatching { bodyAsText() }.getOrNull()
-        val category = when (status.value) {
-            in 400..499 -> "AI service rejected request"
-            in 500..599 -> "AI service failed"
-            else -> "AI service returned unexpected status"
-        }
-
-        throw AiServiceException(
-            message = "$category during $operation: HTTP ${status.value}${responseBody.asSuffix()}",
+        throw AiServiceUnavailableException(
+            message = "Сервис интеллектуального анализа временно недоступен",
             statusCode = status.value,
+            cause = IllegalStateException(
+                "AI service returned HTTP ${status.value} during $operation${responseBody.asSuffix()}",
+            ),
         )
     }
 
@@ -133,18 +130,18 @@ class HttpAiServiceClient(
 
 private suspend fun <T> callAiService(operation: String, block: suspend () -> T): T = try {
     block()
-} catch (e: AiServiceException) {
+} catch (e: AnalyticsException) {
     throw e
 } catch (e: TimeoutCancellationException) {
-    throw AiServiceException("AI service timeout during $operation", cause = e)
+    throw AiServiceTimeoutException(e)
 } catch (e: CancellationException) {
     throw e
 } catch (e: ConnectException) {
-    throw AiServiceException("AI service is unavailable during $operation", cause = e)
+    throw AiServiceUnavailableException(cause = e)
 } catch (e: SerializationException) {
-    throw AiServiceException("AI service returned invalid JSON during $operation", cause = e)
+    throw AiServiceBadResponseException(e)
 } catch (e: IOException) {
-    throw AiServiceException("AI service network error during $operation", cause = e)
+    throw AiServiceUnavailableException(cause = e)
 } catch (e: IllegalStateException) {
-    throw AiServiceException("AI service returned invalid response during $operation", cause = e)
+    throw AiServiceBadResponseException(e)
 }

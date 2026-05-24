@@ -1,7 +1,6 @@
 package com.inrotate.analytics
 
 import com.inrotate.analytics.ai.client.AiServiceClient
-import com.inrotate.analytics.ai.client.AiServiceException
 import com.inrotate.analytics.ai.dataset.AiTrainingDatasetBuilder
 import com.inrotate.analytics.ai.dto.AiModelMetadata
 import com.inrotate.analytics.ai.dto.AiPredictionResponse
@@ -11,6 +10,7 @@ import com.inrotate.analytics.dto.*
 import com.inrotate.models.Organization
 import com.inrotate.repository.EventRepository
 import com.inrotate.repository.OrganizationRepository
+import java.nio.charset.StandardCharsets
 
 class AiAnalyticsService(
     private val config: AiServiceConfig,
@@ -22,9 +22,18 @@ class AiAnalyticsService(
     suspend fun trainAttendanceModel(): TrainingResultDto {
         ensureAiEnabled()
 
-        return callAi("train attendance model") {
+        return try {
             val csvBytes = datasetBuilder.buildCsv()
+            if (!csvBytes.hasTrainingRows()) {
+                throw AiTrainingFailedException("Недостаточно данных для обучения модели")
+            }
+
             aiServiceClient.train(csvBytes).toTrainingResultDto()
+        } catch (e: AiServiceUnavailableException) {
+            if (e.statusCode in CLIENT_ERROR_STATUS_CODES) {
+                throw AiTrainingFailedException("Недостаточно данных для обучения модели", e)
+            }
+            throw e
         }
     }
 
@@ -32,15 +41,17 @@ class AiAnalyticsService(
         ensureAiEnabled()
 
         val event = eventRepository.getById(eventId)
-            ?: throw AnalyticsException(
-                message = "Event with id $eventId not found",
-                code = AnalyticsException.Code.EVENT_NOT_FOUND,
-            )
+            ?: throw AnalyticsEntityNotFoundException("Мероприятие не найдено")
 
-        return callAi("predict attendance for event $eventId") {
+        return try {
             aiServiceClient
                 .predict(AiEventMapper.fromEvent(event))
                 .toAttendancePredictionDto()
+        } catch (e: AiServiceUnavailableException) {
+            if (e.statusCode in CLIENT_ERROR_STATUS_CODES) {
+                throw AiPredictionFailedException("Модель прогнозирования еще не обучена", e)
+            }
+            throw e
         }
     }
 
@@ -49,26 +60,43 @@ class AiAnalyticsService(
 
         val organizations = loadOrganizations(request.organizations)
 
-        return callAi("predict attendance for draft event") {
+        return try {
             aiServiceClient
                 .predict(AiEventMapper.fromDraftRequest(request, organizations))
                 .toAttendancePredictionDto()
+        } catch (e: AiServiceUnavailableException) {
+            if (e.statusCode in CLIENT_ERROR_STATUS_CODES) {
+                throw AiPredictionFailedException("Модель прогнозирования еще не обучена", e)
+            }
+            throw e
+        } catch (e: IllegalArgumentException) {
+            throw AnalyticsValidationException("Некорректные параметры мероприятия", e)
         }
     }
 
     suspend fun getLatestModel(): ModelInfoDto {
         ensureAiEnabled()
 
-        return callAi("get latest model") {
+        return try {
             aiServiceClient.getLatestModel().toModelInfoDto()
+        } catch (e: AiServiceUnavailableException) {
+            if (e.statusCode in CLIENT_ERROR_STATUS_CODES) {
+                throw AiPredictionFailedException("Модель прогнозирования еще не обучена", e)
+            }
+            throw e
         }
     }
 
     suspend fun getModels(): List<ModelInfoDto> {
         ensureAiEnabled()
 
-        return callAi("get models") {
+        return try {
             aiServiceClient.getModels().map { it.toModelInfoDto() }
+        } catch (e: AiServiceUnavailableException) {
+            if (e.statusCode in CLIENT_ERROR_STATUS_CODES) {
+                throw AiPredictionFailedException("Модель прогнозирования еще не обучена", e)
+            }
+            throw e
         }
     }
 
@@ -77,7 +105,7 @@ class AiAnalyticsService(
             return AiHealthDto(
                 enabled = false,
                 available = false,
-                message = "AI service integration is disabled",
+                message = "Сервис интеллектуального анализа отключен",
             )
         }
 
@@ -86,49 +114,24 @@ class AiAnalyticsService(
             enabled = true,
             available = available,
             message = if (available) {
-                "AI service is available"
+                "Сервис интеллектуального анализа доступен"
             } else {
-                "AI service is unavailable"
+                "Сервис интеллектуального анализа временно недоступен"
             },
         )
     }
 
     private fun ensureAiEnabled() {
         if (!config.enabled) {
-            throw AnalyticsException(
-                message = "AI service integration is disabled",
-                code = AnalyticsException.Code.AI_DISABLED,
-            )
+            throw AiServiceDisabledException()
         }
     }
 
-    private suspend fun loadOrganizations(ids: List<Int>): List<Organization> {
-        val organizations = ids.map { id ->
+    private suspend fun loadOrganizations(ids: List<Int>): List<Organization> =
+        ids.map { id ->
             organizationRepository.getById(id)
-                ?: throw AnalyticsException(
-                    message = "Organization with id $id not found",
-                    code = AnalyticsException.Code.ORGANIZATION_NOT_FOUND,
-                )
+                ?: throw AnalyticsEntityNotFoundException("Организация не найдена")
         }
-
-        return organizations
-    }
-
-    private suspend fun <T> callAi(operation: String, block: suspend () -> T): T = try {
-        block()
-    } catch (e: AiServiceException) {
-        throw AnalyticsException(
-            message = "AI service is unavailable during $operation",
-            code = AnalyticsException.Code.AI_UNAVAILABLE,
-            cause = e,
-        )
-    } catch (e: IllegalArgumentException) {
-        throw AnalyticsException(
-            message = "Invalid analytics request during $operation: ${e.message}",
-            code = AnalyticsException.Code.INVALID_REQUEST,
-            cause = e,
-        )
-    }
 
     private fun AiTrainingResponse.toTrainingResultDto(): TrainingResultDto = TrainingResultDto(
         modelVersion = modelVersion,
@@ -154,4 +157,14 @@ class AiAnalyticsService(
         baselineMetrics = baselineMetrics,
         warnings = warnings.orEmpty(),
     )
+
+    private fun ByteArray.hasTrainingRows(): Boolean =
+        toString(StandardCharsets.UTF_8)
+            .lineSequence()
+            .filter { it.isNotBlank() }
+            .count() > 1
+
+    private companion object {
+        val CLIENT_ERROR_STATUS_CODES = 400..499
+    }
 }

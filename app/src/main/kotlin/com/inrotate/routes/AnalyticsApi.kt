@@ -1,12 +1,14 @@
 package com.inrotate.routes
 
-import com.inrotate.analytics.AiAnalyticsService
-import com.inrotate.analytics.AnalyticsException
+import com.inrotate.analytics.*
 import com.inrotate.analytics.dto.EventDraftRequest
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.slf4j.LoggerFactory
+
+private val analyticsLogger = LoggerFactory.getLogger("AnalyticsApi")
 
 fun Route.configureAnalytics(analyticsService: AiAnalyticsService) {
     route("/analytics") {
@@ -33,7 +35,15 @@ fun Route.configureAnalytics(analyticsService: AiAnalyticsService) {
         }
 
         post("/predict-attendance") {
-            val request = call.receive<EventDraftRequest>()
+            val request = try {
+                call.receive<EventDraftRequest>()
+            } catch (e: Exception) {
+                analyticsLogger.warn("Invalid analytics draft request", e)
+                return@post call.respond(
+                    HttpStatusCode.BadRequest,
+                    ApiResponse("Некорректные параметры мероприятия", false),
+                )
+            }
 
             respondAnalytics {
                 analyticsService.predictAttendanceForDraft(request)
@@ -60,16 +70,19 @@ private suspend inline fun <reified T : Any> RoutingContext.respondAnalytics(
     try {
         call.respond(HttpStatusCode.OK, block())
     } catch (e: AnalyticsException) {
+        analyticsLogger.warn("Analytics request failed: ${e.message}", e)
         call.respond(e.toHttpStatus(), ApiResponse(e.message, false))
     }
 }
 
-private fun AnalyticsException.toHttpStatus(): HttpStatusCode = when (code) {
-    AnalyticsException.Code.AI_DISABLED,
-    AnalyticsException.Code.AI_UNAVAILABLE -> HttpStatusCode.ServiceUnavailable
-
-    AnalyticsException.Code.EVENT_NOT_FOUND,
-    AnalyticsException.Code.ORGANIZATION_NOT_FOUND -> HttpStatusCode.NotFound
-
-    AnalyticsException.Code.INVALID_REQUEST -> HttpStatusCode.BadRequest
+private fun AnalyticsException.toHttpStatus(): HttpStatusCode = when (this) {
+    is AiServiceDisabledException -> HttpStatusCode.ServiceUnavailable
+    is AiServiceUnavailableException -> HttpStatusCode.ServiceUnavailable
+    is AiServiceTimeoutException -> HttpStatusCode.GatewayTimeout
+    is AiServiceBadResponseException -> HttpStatusCode.BadGateway
+    is AiTrainingFailedException -> HttpStatusCode.BadRequest
+    is AiPredictionFailedException -> HttpStatusCode.Conflict
+    is AnalyticsValidationException -> HttpStatusCode.BadRequest
+    is AnalyticsEntityNotFoundException -> HttpStatusCode.NotFound
+    else -> HttpStatusCode.InternalServerError
 }

@@ -13,7 +13,7 @@ import java.io.FileInputStream
 class XlsxParserTest {
 
     private val testFilePath = "test_events.xlsx"
-    private val realFiles = listOf("2022.xlsx", "2023.xlsx", "2024.xlsx", "2025.xlsx")
+    private val realFiles = listOf("2022.xlsx", "2023.xlsx", "2024.xlsx", "2025.xlsx", "2026.xlsx")
 
 
     @BeforeEach
@@ -38,7 +38,7 @@ class XlsxParserTest {
             events.addAll(XlsxParser.parseEvents(xlsxStream))
         }
 
-        assertEquals(1326, events.size)
+        assertEquals(1421, events.size)
     }
 
     @Test

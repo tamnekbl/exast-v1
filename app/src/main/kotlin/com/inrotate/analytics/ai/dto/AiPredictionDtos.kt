@@ -27,7 +27,7 @@ enum class EventScale {
 
 @Serializable
 data class AiEventScalePredictionRequest(
-    val title: String?,
+    val title: String,
     val description: String?,
     @SerialName("date_start")
     val dateStart: LocalDate,
@@ -48,25 +48,50 @@ data class AiEventScalePredictionRequest(
 @Serializable
 data class AiOrganizationDto(
     val id: Long?,
-    val name: String?,
+    val name: String,
     val type: String?,
     @SerialName("isExternal")
-    val isExternal: Boolean = false,
+    val isExternal: Boolean? = null,
 )
 
 @Serializable
 data class AiEventScalePredictionResponse(
     @JsonNames("predicted_scale")
-    val predictedScale: EventScale,
+    val predictedScale: String,
     val description: String,
     @JsonNames("participants_range")
     val participantsRange: String,
     val probabilities: Map<String, Double>,
     val confidence: Double,
+    @JsonNames("similar_events")
+    val similarEvents: List<SimilarEventResponse> = emptyList(),
     @JsonNames("model_version")
-    val modelVersion: String? = null,
+    val modelVersion: String,
     @JsonNames("model_trained_at")
     val modelTrainedAt: String? = null,
-    val metrics: Map<String, JsonElement> = emptyMap(),
+    val metrics: Map<String, JsonElement>? = null,
     val warnings: List<String> = emptyList(),
+)
+
+@Serializable
+data class SimilarEventResponse(
+    val title: String? = null,
+    val description: String? = null,
+    @JsonNames("date_start")
+    val dateStart: String? = null,
+    @JsonNames("date_end")
+    val dateEnd: String? = null,
+    val level: String? = null,
+    val format: String? = null,
+    @JsonNames("organization_role")
+    val organizationRole: String? = null,
+    @JsonNames("main_type")
+    val mainType: String? = null,
+    @JsonNames("main_organization_type")
+    val mainOrganizationType: String? = null,
+    @JsonNames("participants_total")
+    val participantsTotal: Int? = null,
+    @JsonNames("event_scale")
+    val eventScale: String,
+    val similarity: Double,
 )

@@ -123,8 +123,8 @@ private fun AnalyticsException.toHttpStatus(): HttpStatusCode = when (this) {
     is AiServiceBadResponseException -> HttpStatusCode.BadGateway
     is AiModelNotFoundException -> HttpStatusCode.Conflict
     is AiBadRequestException -> HttpStatusCode.BadRequest
-    is AiTrainingFailedException -> HttpStatusCode.BadRequest
-    is AiPredictionFailedException -> HttpStatusCode.Conflict
+    is AiTrainingFailedException -> HttpStatusCode.BadGateway
+    is AiPredictionFailedException -> HttpStatusCode.BadGateway
     is AnalyticsValidationException -> HttpStatusCode.BadRequest
     is AnalyticsEntityNotFoundException -> HttpStatusCode.NotFound
     else -> HttpStatusCode.InternalServerError

@@ -5,7 +5,7 @@ import com.inrotate.analytics.ai.dataset.AiTrainingDatasetBuilder
 import com.inrotate.analytics.ai.dto.AiEventScalePredictionResponse
 import com.inrotate.analytics.ai.dto.AiModelMetadata
 import com.inrotate.analytics.ai.dto.AiTrainingResponse
-import com.inrotate.analytics.ai.dto.EventScale
+import com.inrotate.analytics.ai.dto.SimilarEventResponse
 import com.inrotate.analytics.ai.mapper.AiEventMapper
 import com.inrotate.analytics.dto.*
 import com.inrotate.models.Organization
@@ -210,16 +210,32 @@ class AiAnalyticsService(
 
     private fun AiEventScalePredictionResponse.toEventScalePredictionDto(): EventScalePredictionDto =
         EventScalePredictionDto(
-            predictedScale = predictedScale.serialName,
-            description = description,
+            predictedScale = predictedScale,
+            scaleDescription = description,
             participantsRange = participantsRange,
             probabilities = probabilities,
             confidence = confidence,
+            similarEvents = similarEvents.map { it.toDto() },
             modelVersion = modelVersion,
             modelTrainedAt = modelTrainedAt,
             metrics = metrics.numericMetrics(),
             warnings = warnings,
         )
+
+    private fun SimilarEventResponse.toDto(): SimilarEventDto = SimilarEventDto(
+        title = title,
+        description = description,
+        dateStart = dateStart,
+        dateEnd = dateEnd,
+        level = level,
+        format = format,
+        organizationRole = organizationRole,
+        mainType = mainType,
+        mainOrganizationType = mainOrganizationType,
+        participantsTotal = participantsTotal,
+        eventScale = eventScale,
+        similarity = similarity,
+    )
 
     private fun AiModelMetadata.toModelInfoDto(): ModelInfoDto = ModelInfoDto(
         modelVersion = modelVersion,
@@ -241,16 +257,8 @@ class AiAnalyticsService(
     }
 }
 
-private val EventScale.serialName: String
-    get() = when (this) {
-        EventScale.SMALL_1_20 -> "small_1_20"
-        EventScale.MEDIUM_21_50 -> "medium_21_50"
-        EventScale.LARGE_51_200 -> "large_51_200"
-        EventScale.MASS_201_PLUS -> "mass_201_plus"
-    }
-
-private fun Map<String, JsonElement>.numericMetrics(): Map<String, Double> =
-    mapNotNull { (key, value) ->
+private fun Map<String, JsonElement>?.numericMetrics(): Map<String, Double> =
+    orEmpty().mapNotNull { (key, value) ->
         val number = (value as? JsonPrimitive)?.doubleOrNull
         number?.let { key to it }
     }.toMap()

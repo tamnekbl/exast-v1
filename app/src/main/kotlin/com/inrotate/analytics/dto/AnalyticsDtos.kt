@@ -21,14 +21,31 @@ data class TrainingResultDto(
 @Serializable
 data class EventScalePredictionDto(
     val predictedScale: String,
-    val description: String,
+    val scaleDescription: String,
     val participantsRange: String,
     val probabilities: Map<String, Double>,
     val confidence: Double,
-    val modelVersion: String?,
+    val similarEvents: List<SimilarEventDto> = emptyList(),
+    val modelVersion: String,
     val modelTrainedAt: String?,
     val metrics: Map<String, Double> = emptyMap(),
     val warnings: List<String> = emptyList(),
+)
+
+@Serializable
+data class SimilarEventDto(
+    val title: String? = null,
+    val description: String? = null,
+    val dateStart: String? = null,
+    val dateEnd: String? = null,
+    val level: String? = null,
+    val format: String? = null,
+    val organizationRole: String? = null,
+    val mainType: String? = null,
+    val mainOrganizationType: String? = null,
+    val participantsTotal: Int? = null,
+    val eventScale: String,
+    val similarity: Double,
 )
 
 @Serializable

@@ -31,7 +31,9 @@ class AiAnalyticsServiceTest {
         val result = service.predictAttendanceForEvent(1)
 
         assertEquals("large_51_200", result.predictedScale)
+        assertEquals("large", result.scaleDescription)
         assertEquals(0.51, result.confidence)
+        assertEquals("Historical event", result.similarEvents.single().title)
         assertEquals(1, aiClient.predictCalls)
         assertEquals("Existing event", aiClient.lastPredictionRequest?.title)
         assertEquals("cultural_creative", aiClient.lastPredictionRequest?.types?.single())
@@ -126,11 +128,27 @@ class AiAnalyticsServiceTest {
             lastPredictionRequest = request
             predictException?.let { throw it }
             return AiEventScalePredictionResponse(
-                predictedScale = EventScale.LARGE_51_200,
+                predictedScale = "large_51_200",
                 description = "large",
                 participantsRange = "51-200",
                 probabilities = mapOf("large_51_200" to 0.51),
                 confidence = 0.51,
+                similarEvents = listOf(
+                    SimilarEventResponse(
+                        title = "Historical event",
+                        description = "Similar",
+                        dateStart = "2023-05-02",
+                        dateEnd = "2023-05-02",
+                        level = "university",
+                        format = "offline",
+                        organizationRole = "organization",
+                        mainType = "cultural_creative",
+                        mainOrganizationType = "OTHER",
+                        participantsTotal = 2624,
+                        eventScale = "mass_201_plus",
+                        similarity = 0.86,
+                    ),
+                ),
                 modelVersion = "model-v1",
                 modelTrainedAt = "2026-05-24T10:00:00",
                 metrics = mapOf("accuracy" to JsonPrimitive(1.0)),

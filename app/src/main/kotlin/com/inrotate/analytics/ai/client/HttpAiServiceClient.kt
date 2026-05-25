@@ -129,6 +129,22 @@ class HttpAiServiceClient(
                 ),
             )
         }
+        if (status.value == HttpStatusCode.InternalServerError.value && operation == "train model") {
+            throw AiTrainingFailedException(
+                message = error?.message ?: "Ошибка обучения модели в сервисе интеллектуального анализа",
+                cause = IllegalStateException(
+                    "AI service failed during $operation: HTTP ${status.value}${responseBody.asSuffix()}",
+                ),
+            )
+        }
+        if (status.value == HttpStatusCode.InternalServerError.value && operation == "predict attendance") {
+            throw AiPredictionFailedException(
+                message = error?.message ?: "Ошибка прогноза в сервисе интеллектуального анализа",
+                cause = IllegalStateException(
+                    "AI service failed during $operation: HTTP ${status.value}${responseBody.asSuffix()}",
+                ),
+            )
+        }
 
         throw AiServiceUnavailableException(
             message = "Сервис интеллектуального анализа временно недоступен",

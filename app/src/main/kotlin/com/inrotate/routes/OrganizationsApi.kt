@@ -13,7 +13,9 @@ fun Route.configureOrganizations(
 ) {
     route("/organizations") {
         get {
-            val organizations = organizationRepository.getAll()
+            val name = call.request.queryParameters["name"]
+
+            val organizations = organizationRepository.getFiltered(name)
             call.respond(HttpStatusCode.OK, organizations.map { it.toResponse() })
         }
 

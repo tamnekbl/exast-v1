@@ -2,10 +2,26 @@ package com.inrotate.repository
 
 import com.inrotate.db.*
 import com.inrotate.models.Organization
+import org.jetbrains.exposed.sql.Op
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
+import org.jetbrains.exposed.sql.lowerCase
 
 class OrganizationRepositoryImpl : OrganizationRepository {
     override suspend fun getAll(): List<Organization> = suspendTransaction {
         OrganizationDAO.all().map { it.toOrganization() }
+    }
+
+    override suspend fun getFiltered(name: String?): List<Organization> = suspendTransaction {
+        val filter = if (name.isNullOrBlank()) {
+            Op.TRUE
+        } else {
+            OrganizationsTable.name.lowerCase() like "%${name.lowercase()}%"
+        }
+
+        OrganizationDAO
+            .find(filter)
+            .toList()
+            .map { it.toOrganization() }
     }
 
     override suspend fun getById(id: Int): Organization? = suspendTransaction {

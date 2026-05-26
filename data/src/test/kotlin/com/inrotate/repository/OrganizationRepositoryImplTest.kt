@@ -145,4 +145,25 @@ class OrganizationRepositoryImplTest : TestDatabase() {
         assertTrue(organizations.any { it.name == "Organization 1" })
         assertTrue(organizations.any { it.name == "Organization 2" })
     }
+
+    @Test
+    fun `should filter organizations by name`() = runBlocking {
+        val org1 = Organization(
+            id = 0,
+            name = "Alpha Organization",
+            description = "Alpha Organization Full Name",
+            type = OrganizationType(1, "Educational")
+        )
+        val org2 = org1.copy(id = 0, name = "Beta Organization", description = "Beta Organization Full Name")
+
+        organizationTypeRepository.add(OrganizationType(1, "Educational"))
+
+        repository.add(org1)
+        repository.add(org2)
+
+        val organizations = repository.getFiltered("alpha")
+
+        assertEquals(1, organizations.size)
+        assertEquals("Alpha Organization", organizations.single().name)
+    }
 }

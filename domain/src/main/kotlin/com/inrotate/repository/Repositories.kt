@@ -42,6 +42,7 @@ interface ParticipantRepository : CrudRepository<Int, Participant> {
 interface SpecialityRepository : CrudRepository<Int, Speciality>
 
 interface OrganizationRepository : CrudRepository<Int, Organization> {
+    suspend fun getFiltered(name: String?): List<Organization>
     suspend fun getByType(typeId: Int): List<Organization>
 }
 

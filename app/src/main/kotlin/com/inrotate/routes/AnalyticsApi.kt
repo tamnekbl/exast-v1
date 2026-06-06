@@ -102,6 +102,36 @@ fun Route.configureAnalytics(
                 analyticsService.getModels()
             }
         }
+
+        route("/ai") {
+            get("/feature-insights") {
+                val modelVersion = call.request.queryParameters["modelVersion"]?.takeIf { it.isNotBlank() }
+                val topNParameter = call.request.queryParameters["topN"]
+                val topN = topNParameter?.toIntOrNull() ?: if (topNParameter == null) {
+                    20
+                } else {
+                    return@get call.respond(
+                        HttpStatusCode.BadRequest,
+                        ApiResponse("topN must be an integer", false),
+                    )
+                }
+                if (topN !in 5..50) {
+                    return@get call.respond(
+                        HttpStatusCode.BadRequest,
+                        ApiResponse("topN must be between 5 and 50", false),
+                    )
+                }
+
+                analyticsLogger.info(
+                    "Feature insights request received: modelVersion={}, topN={}",
+                    modelVersion,
+                    topN,
+                )
+                respondAnalytics {
+                    analyticsService.getFeatureInsights(modelVersion, topN)
+                }
+            }
+        }
     }
 }
 
@@ -121,10 +151,11 @@ private fun AnalyticsException.toHttpStatus(): HttpStatusCode = when (this) {
     is AiServiceUnavailableException -> HttpStatusCode.ServiceUnavailable
     is AiServiceTimeoutException -> HttpStatusCode.GatewayTimeout
     is AiServiceBadResponseException -> HttpStatusCode.BadGateway
-    is AiModelNotFoundException -> HttpStatusCode.Conflict
+    is AiModelNotFoundException -> HttpStatusCode.NotFound
     is AiBadRequestException -> HttpStatusCode.BadRequest
     is AiTrainingFailedException -> HttpStatusCode.BadGateway
     is AiPredictionFailedException -> HttpStatusCode.BadGateway
+    is AiFeatureInsightsFailedException -> HttpStatusCode.BadGateway
     is AnalyticsValidationException -> HttpStatusCode.BadRequest
     is AnalyticsEntityNotFoundException -> HttpStatusCode.NotFound
     else -> HttpStatusCode.InternalServerError

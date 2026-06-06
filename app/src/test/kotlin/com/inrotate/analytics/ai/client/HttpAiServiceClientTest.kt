@@ -297,6 +297,120 @@ class HttpAiServiceClientTest {
         assertEquals("Dataset is invalid.", exception.message)
     }
 
+    @Test
+    fun `getFeatureInsights sends topN and modelVersion query parameters`() = runBlocking {
+        var capturedRequest: HttpRequestData? = null
+        val client = testClient(
+            MockEngine { request ->
+                capturedRequest = request
+                respond(
+                    content = featureInsightsJson(),
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                )
+            },
+        )
+
+        val response = client.getFeatureInsights(modelVersion = "event_scale_v1", topN = 15)
+
+        assertEquals(HttpMethod.Get, capturedRequest?.method)
+        assertEquals("/analytics/feature-insights", capturedRequest?.url?.encodedPath)
+        assertEquals("event_scale_v1", capturedRequest?.url?.parameters?.get("model_version"))
+        assertEquals("15", capturedRequest?.url?.parameters?.get("top_n"))
+        assertEquals("event_scale_v1", response.model.modelVersion)
+        assertEquals(42, response.dataset.eventsCount)
+        assertEquals("main_type", response.featureImportance.groupedFeatures.single().feature)
+    }
+
+    @Test
+    fun `getFeatureInsights omits modelVersion query parameter when absent`() = runBlocking {
+        var capturedRequest: HttpRequestData? = null
+        val client = testClient(
+            MockEngine { request ->
+                capturedRequest = request
+                respond(
+                    content = featureInsightsJson(),
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                )
+            },
+        )
+
+        client.getFeatureInsights(topN = 20)
+
+        assertEquals(null, capturedRequest?.url?.parameters?.get("model_version"))
+        assertEquals("20", capturedRequest?.url?.parameters?.get("top_n"))
+    }
+
+    @Test
+    fun `getFeatureInsights maps model not found to model not found exception`() = runBlocking {
+        val client = testClient(
+            MockEngine {
+                respond(
+                    content = """{"error":"MODEL_NOT_FOUND","message":"No trained models found in model registry.","details":{}}""",
+                    status = HttpStatusCode.NotFound,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                )
+            },
+        )
+
+        assertFailsWith<AiModelNotFoundException> {
+            client.getFeatureInsights()
+        }
+    }
+
+    @Test
+    fun `getFeatureInsights maps 500 response to feature insights failed exception`() = runBlocking {
+        val client = testClient(
+            MockEngine {
+                respond(
+                    content = """{"error":"AI_SERVICE_ERROR","message":"Feature insights failed.","details":{}}""",
+                    status = HttpStatusCode.InternalServerError,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                )
+            },
+        )
+
+        val exception = assertFailsWith<AiFeatureInsightsFailedException> {
+            client.getFeatureInsights()
+        }
+        assertEquals("Feature insights failed.", exception.message)
+    }
+
+    @Test
+    fun `getFeatureInsights accepts nested classification report metrics`() = runBlocking {
+        val client = testClient(
+            MockEngine {
+                respond(
+                    content = featureInsightsJsonWithNestedMetrics(),
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                )
+            },
+        )
+
+        val response = client.getFeatureInsights()
+
+        assertEquals("event_scale_v1", response.model.modelVersion)
+        assertTrue(response.model.metrics.containsKey("classification_report"))
+    }
+
+    @Test
+    fun `getFeatureInsights accepts monthly chart items without value`() = runBlocking {
+        val client = testClient(
+            MockEngine {
+                respond(
+                    content = featureInsightsJsonWithMonthlyChartItemWithoutValue(),
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                )
+            },
+        )
+
+        val response = client.getFeatureInsights()
+
+        val monthlyItem = response.charts.monthlyScaleDistribution?.items?.single()
+        assertEquals("January", monthlyItem?.label)
+        assertEquals(null, monthlyItem?.value)
+        assertEquals("mass_201_plus", monthlyItem?.code)
+    }
+
     private fun testClient(
         engine: MockEngine,
         requestTimeoutMillis: Long = 30_000,
@@ -340,4 +454,68 @@ class HttpAiServiceClientTest {
         types = listOf("cultural_creative"),
         organizations = emptyList(),
     )
+
+    private fun featureInsightsJson(): String = """
+        {
+          "model": {
+            "model_version": "event_scale_v1",
+            "model_type": "random_forest",
+            "task_type": "event_scale",
+            "trained_at": "2026-06-01T10:00:00",
+            "metrics": {"accuracy": 0.71},
+            "baseline_metrics": {"accuracy": 0.4},
+            "warnings": []
+          },
+          "dataset": {
+            "events_count": 42,
+            "scale_distribution": [
+              {"scale": "mass_201_plus", "label": "Mass", "participants_range": "201+", "count": 10, "percent": 23.8}
+            ],
+            "participants_buckets": [
+              {"bucket": "201+", "from": 201, "to": null, "count": 10, "percent": 23.8}
+            ]
+          },
+          "featureImportance": {
+            "top_transformed_features": [
+              {"feature": "main_type:cultural_creative", "display_name": "Cultural creative", "importance": 0.35, "group": "main_type"}
+            ],
+            "grouped_features": [
+              {"feature": "main_type", "display_name": "Main type", "importance": 0.42, "group": null}
+            ]
+          },
+          "factors": {
+            "by_main_type": [
+              {"code": "cultural_creative", "label": "Cultural creative", "count": 12, "mean_participants": 120.0, "median_participants": 90.0, "mass_count": 3, "mass_share": 0.25, "large_or_mass_share": 0.5, "percent": 28.5}
+            ],
+            "by_organization_type": [],
+            "by_level": [],
+            "by_organization_role": [],
+            "by_month": [],
+            "by_keyword": []
+          },
+          "charts": {
+            "scale_distribution": {
+              "title": "Scale distribution",
+              "type": "bar",
+              "items": [
+                {"label": "Mass", "value": 10.0, "percent": 23.8, "code": "mass_201_plus"}
+              ]
+            },
+            "monthly_scale_distribution": {
+              "title": "Monthly scale distribution",
+              "type": "stacked_bar",
+              "items": [
+                {"label": "January", "percent": 33.0, "group": "2026", "code": "mass_201_plus"}
+              ]
+            }
+          }
+        }
+    """.trimIndent()
+
+    private fun featureInsightsJsonWithNestedMetrics(): String = featureInsightsJson().replace(
+        """"metrics": {"accuracy": 0.71}""",
+        """"metrics": {"accuracy": 0.71, "classification_report": {"small_1_20": {"precision": 0.75}}}""",
+    )
+
+    private fun featureInsightsJsonWithMonthlyChartItemWithoutValue(): String = featureInsightsJson()
 }

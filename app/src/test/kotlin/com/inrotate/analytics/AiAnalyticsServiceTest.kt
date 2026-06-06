@@ -76,6 +76,20 @@ class AiAnalyticsServiceTest {
         }
     }
 
+    @Test
+    fun `getFeatureInsights proxies request to ai client`() = runBlocking {
+        val aiClient = FakeAiServiceClient()
+        val service = service(aiClient = aiClient)
+
+        val result = service.getFeatureInsights(modelVersion = "event_scale_v1", topN = 15)
+
+        assertEquals("event_scale_v1", result.model.modelVersion)
+        assertEquals(42, result.dataset.eventsCount)
+        assertEquals(1, aiClient.featureInsightsCalls)
+        assertEquals("event_scale_v1", aiClient.lastFeatureInsightsModelVersion)
+        assertEquals(15, aiClient.lastFeatureInsightsTopN)
+    }
+
     private fun service(
         config: AiServiceConfig = config(),
         aiClient: FakeAiServiceClient = FakeAiServiceClient(),
@@ -103,8 +117,11 @@ class AiAnalyticsServiceTest {
     ) : AiServiceClient {
         var trainCalls = 0
         var predictCalls = 0
+        var featureInsightsCalls = 0
         var trainedCsv: ByteArray? = null
         var lastPredictionRequest: AiEventScalePredictionRequest? = null
+        var lastFeatureInsightsModelVersion: String? = null
+        var lastFeatureInsightsTopN: Int? = null
 
         override suspend fun health(): AiHealthResponse = AiHealthResponse("ok")
 
@@ -165,5 +182,15 @@ class AiAnalyticsServiceTest {
         )
 
         override suspend fun getModels(): List<AiModelMetadata> = listOf(getLatestModel())
+
+        override suspend fun getFeatureInsights(
+            modelVersion: String?,
+            topN: Int,
+        ): AiFeatureInsightsResponse {
+            featureInsightsCalls++
+            lastFeatureInsightsModelVersion = modelVersion
+            lastFeatureInsightsTopN = topN
+            return testFeatureInsightsResponse(modelVersion = modelVersion ?: "event_scale_v1")
+        }
     }
 }

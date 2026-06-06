@@ -16,7 +16,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
 fun Application.configureRouting() {
-    val dotenv = Dotenv.load()
+    val dotenv = Dotenv.configure().ignoreIfMissing().load()
     val aiServiceConfig = AiServiceConfig.from(dotenv)
 
     install(StatusPages) {

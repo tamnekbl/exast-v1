@@ -103,6 +103,30 @@ class HttpAiServiceClient(
         result
     }
 
+    override suspend fun getFeatureInsights(
+        modelVersion: String?,
+        topN: Int,
+    ): AiFeatureInsightsResponse = callAiService("get feature insights") {
+        aiClientLogger.info(
+            "Requesting AI feature insights from Python service: modelVersion={}, topN={}",
+            modelVersion,
+            topN,
+        )
+        val response = httpClient.get("$baseUrl/analytics/feature-insights") {
+            modelVersion?.takeIf { it.isNotBlank() }?.let { parameter("model_version", it) }
+            parameter("top_n", topN)
+        }
+
+        val result = response.requireSuccess("get feature insights").body<AiFeatureInsightsResponse>()
+        aiClientLogger.info(
+            "AI feature insights response received: modelVersion={}, eventsCount={}, topFeaturesCount={}",
+            result.model.modelVersion,
+            result.dataset.eventsCount,
+            result.featureImportance.topTransformedFeatures.size,
+        )
+        result
+    }
+
     private suspend fun HttpResponse.requireSuccess(operation: String): HttpResponse {
         if (status.isSuccess()) {
             return this
@@ -140,6 +164,15 @@ class HttpAiServiceClient(
         if (status.value == HttpStatusCode.InternalServerError.value && operation == "predict attendance") {
             throw AiPredictionFailedException(
                 message = error?.message ?: "Ошибка прогноза в сервисе интеллектуального анализа",
+                cause = IllegalStateException(
+                    "AI service failed during $operation: HTTP ${status.value}${responseBody.asSuffix()}",
+                ),
+            )
+        }
+
+        if (status.value == HttpStatusCode.InternalServerError.value && operation == "get feature insights") {
+            throw AiFeatureInsightsFailedException(
+                message = error?.message ?: "AI service failed to build feature insights",
                 cause = IllegalStateException(
                     "AI service failed during $operation: HTTP ${status.value}${responseBody.asSuffix()}",
                 ),

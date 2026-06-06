@@ -2,10 +2,7 @@ package com.inrotate.analytics
 
 import com.inrotate.analytics.ai.client.AiServiceClient
 import com.inrotate.analytics.ai.dataset.AiTrainingDatasetBuilder
-import com.inrotate.analytics.ai.dto.AiEventScalePredictionResponse
-import com.inrotate.analytics.ai.dto.AiModelMetadata
-import com.inrotate.analytics.ai.dto.AiTrainingResponse
-import com.inrotate.analytics.ai.dto.SimilarEventResponse
+import com.inrotate.analytics.ai.dto.*
 import com.inrotate.analytics.ai.mapper.AiEventMapper
 import com.inrotate.analytics.dto.*
 import com.inrotate.models.Organization
@@ -154,6 +151,38 @@ class AiAnalyticsService(
             throw e
         } catch (e: AiServiceUnavailableException) {
             logger.warn("AI model list request failed: AI service unavailable", e)
+            throw e
+        }
+    }
+
+    suspend fun getFeatureInsights(
+        modelVersion: String? = null,
+        topN: Int = 20,
+    ): AiFeatureInsightsResponse {
+        ensureAiEnabled()
+
+        return try {
+            logger.info(
+                "Requesting AI feature insights: modelVersion={}, topN={}",
+                modelVersion,
+                topN,
+            )
+            val insights = aiServiceClient.getFeatureInsights(modelVersion, topN)
+            logger.info(
+                "AI feature insights received: modelVersion={}, eventsCount={}, topFeaturesCount={}",
+                insights.model.modelVersion,
+                insights.dataset.eventsCount,
+                insights.featureImportance.topTransformedFeatures.size,
+            )
+            insights
+        } catch (e: AiModelNotFoundException) {
+            logger.warn("AI feature insights unavailable: model is not trained", e)
+            throw e
+        } catch (e: AiServiceUnavailableException) {
+            logger.warn("AI feature insights request failed: AI service unavailable", e)
+            throw e
+        } catch (e: AnalyticsException) {
+            logger.error("Unexpected AI feature insights integration error", e)
             throw e
         }
     }

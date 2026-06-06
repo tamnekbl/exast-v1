@@ -377,6 +377,7 @@ POST   /analytics/predict-attendance
 POST   /analytics/predict-scale
 GET    /analytics/models/latest
 GET    /analytics/models
+GET    /analytics/ai/feature-insights?modelVersion={version}&topN={5..50}
 ```
 
 ## Основные функциональные участки
@@ -494,6 +495,16 @@ POST /api/v1/analytics/events/{eventId}/predict-attendance
   -> external AI service POST /predict-attendance
 ```
 
+Feature insights flow:
+
+```text
+GET /api/v1/analytics/ai/feature-insights?modelVersion={version}&topN=20
+  -> AiAnalyticsService.getFeatureInsights(modelVersion, topN)
+  -> HttpAiServiceClient.getFeatureInsights(modelVersion, topN)
+  -> external AI service GET /analytics/feature-insights?model_version={version}&top_n=20
+  -> backend proxies AiFeatureInsightsResponse for dashboards without recalculating analytics
+```
+
 `HttpAiServiceClient` обрабатывает таймауты, сетевые ошибки, невалидный JSON и ошибки внешнего сервиса, переводя их в `AnalyticsException`-иерархию. В `AnalyticsApi.kt` эти ошибки конвертируются в HTTP-статусы:
 
 ```text
@@ -501,8 +512,9 @@ AiServiceDisabledException      -> 503 Service Unavailable
 AiServiceUnavailableException   -> 503 Service Unavailable
 AiServiceTimeoutException       -> 504 Gateway Timeout
 AiServiceBadResponseException   -> 502 Bad Gateway
-AiModelNotFoundException        -> 409 Conflict
+AiModelNotFoundException        -> 404 Not Found
 AiBadRequestException           -> 400 Bad Request
+AiFeatureInsightsFailedException-> 502 Bad Gateway
 AnalyticsValidationException    -> 400 Bad Request
 AnalyticsEntityNotFoundException-> 404 Not Found
 ```

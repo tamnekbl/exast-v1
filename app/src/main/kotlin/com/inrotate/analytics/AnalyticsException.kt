@@ -51,6 +51,11 @@ class AiPredictionFailedException(
     cause: Throwable? = null,
 ) : AnalyticsException(message, cause)
 
+class AiFeatureInsightsFailedException(
+    message: String,
+    cause: Throwable? = null,
+) : AnalyticsException(message, cause)
+
 class AnalyticsValidationException(
     message: String,
     cause: Throwable? = null,

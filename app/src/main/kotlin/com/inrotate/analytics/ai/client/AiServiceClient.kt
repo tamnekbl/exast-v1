@@ -8,4 +8,5 @@ interface AiServiceClient {
     suspend fun predict(request: AiEventScalePredictionRequest): AiEventScalePredictionResponse
     suspend fun getLatestModel(): AiModelMetadata
     suspend fun getModels(): List<AiModelMetadata>
+    suspend fun getFeatureInsights(modelVersion: String? = null, topN: Int = 20): AiFeatureInsightsResponse
 }
